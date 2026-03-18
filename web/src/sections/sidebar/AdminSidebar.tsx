@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useSettingsContext } from "@/providers/SettingsProvider";
 import SidebarSection from "@/sections/sidebar/SidebarSection";
@@ -180,9 +180,15 @@ function groupBySection(items: SidebarItemEntry[]) {
 
 interface AdminSidebarProps {
   enableCloudSS: boolean;
+  folded?: boolean;
+  onFoldClick?: () => void;
 }
 
-export default function AdminSidebar({ enableCloudSS }: AdminSidebarProps) {
+export default function AdminSidebar({
+  enableCloudSS,
+  folded,
+  onFoldClick,
+}: AdminSidebarProps) {
   const { kgExposed } = useIsKGExposed();
   const pathname = usePathname();
   const { customAnalyticsEnabled } = useCustomAnalyticsEnabled();
@@ -217,10 +223,17 @@ export default function AdminSidebar({ enableCloudSS }: AdminSidebarProps) {
 
   const { query, setQuery, filtered } = useFilter(allItems, itemExtractor);
 
+  // Clear search when sidebar folds so it doesn't persist invisibly
+  useEffect(() => {
+    if (folded) {
+      setQuery("");
+    }
+  }, [folded, setQuery]);
+
   const groups = groupBySection(filtered);
 
   return (
-    <SidebarWrapper>
+    <SidebarWrapper folded={folded} onFoldClick={onFoldClick}>
       <SidebarBody
         scrollKey="admin-sidebar"
         actionButtons={
@@ -229,54 +242,59 @@ export default function AdminSidebar({ enableCloudSS }: AdminSidebarProps) {
               icon={({ className }) => <SvgX className={className} size={16} />}
               href="/app"
               lowlight
+              folded={folded}
             >
               Exit Admin Panel
             </SidebarTab>
-            <InputTypeIn
-              variant="internal"
-              leftSearchIcon
-              placeholder="Search..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
+            {!folded && (
+              <InputTypeIn
+                variant="internal"
+                leftSearchIcon
+                placeholder="Search..."
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            )}
           </div>
         }
         footer={
-          <Section gap={0} height="fit" alignItems="start">
-            <div className="p-[0.38rem] w-full">
-              <Content
-                icon={SvgUserManage}
-                title={getUserDisplayName(user)}
-                sizePreset="main-ui"
-                variant="body"
-                prominence="muted"
-                widthVariant="full"
-              />
-            </div>
-            <div className="flex flex-row gap-1 p-[0.38rem] w-full">
-              <Text text03 secondaryAction>
-                <a
-                  className="underline"
-                  href="https://onyx.app"
-                  target="_blank"
-                >
-                  Onyx
-                </a>
-              </Text>
-              <Text text03 secondaryBody>
-                |
-              </Text>
-              {settings.webVersion ? (
-                <Text text03 secondaryBody>
-                  {settings.webVersion}
+          !folded ? (
+            <Section gap={0} height="fit" alignItems="start">
+              <div className="p-[0.38rem] w-full">
+                <Content
+                  icon={SvgUserManage}
+                  title={getUserDisplayName(user)}
+                  sizePreset="main-ui"
+                  variant="body"
+                  prominence="muted"
+                  widthVariant="full"
+                />
+              </div>
+              <div className="flex flex-row gap-1 p-[0.38rem] w-full">
+                <Text text03 secondaryAction>
+                  <a
+                    className="underline"
+                    href="https://onyx.app"
+                    target="_blank"
+                  >
+                    Onyx
+                  </a>
                 </Text>
-              ) : (
                 <Text text03 secondaryBody>
-                  {APP_SLOGAN}
+                  |
                 </Text>
-              )}
-            </div>
-          </Section>
+                {settings.webVersion ? (
+                  <Text text03 secondaryBody>
+                    {settings.webVersion}
+                  </Text>
+                ) : (
+                  <Text text03 secondaryBody>
+                    {APP_SLOGAN}
+                  </Text>
+                )}
+              </div>
+            </Section>
+          ) : undefined
         }
       >
         {groups.map((group, groupIndex) => {
@@ -290,6 +308,7 @@ export default function AdminSidebar({ enableCloudSS }: AdminSidebarProps) {
               */}
               <div>
                 <SidebarTab
+                  folded={folded}
                   lowlight={disabled}
                   icon={icon}
                   href={disabled ? undefined : link}
@@ -306,7 +325,11 @@ export default function AdminSidebar({ enableCloudSS }: AdminSidebarProps) {
           }
 
           return (
-            <SidebarSection key={groupIndex} title={group.section}>
+            <SidebarSection
+              key={groupIndex}
+              title={group.section}
+              folded={folded}
+            >
               {tabs}
             </SidebarSection>
           );

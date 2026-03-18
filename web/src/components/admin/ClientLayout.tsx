@@ -7,6 +7,9 @@ import { ApplicationStatus } from "@/interfaces/settings";
 import { Button } from "@opal/components";
 import { cn } from "@/lib/utils";
 import { ADMIN_ROUTES } from "@/lib/admin-routes";
+import { useAppSidebarContext } from "@/providers/AppSidebarProvider";
+import useScreenSize from "@/hooks/useScreenSize";
+import { SvgSidebar } from "@opal/icons";
 
 export interface ClientLayoutProps {
   children: React.ReactNode;
@@ -50,6 +53,8 @@ const SETTINGS_LAYOUT_PREFIXES = [
 export function ClientLayout({ children, enableCloud }: ClientLayoutProps) {
   const pathname = usePathname();
   const settings = useSettingsContext();
+  const { folded, setFolded } = useAppSidebarContext();
+  const { isMobile } = useScreenSize();
 
   // Certain admin panels have their own custom sidebar.
   // For those pages, we skip rendering the default `AdminSidebar` and let those individual pages render their own.
@@ -60,6 +65,41 @@ export function ClientLayout({ children, enableCloud }: ClientLayoutProps) {
   // Pages using SettingsLayouts handle their own padding/centering.
   const hasOwnLayout = SETTINGS_LAYOUT_PREFIXES.some((prefix) =>
     pathname.startsWith(prefix)
+  );
+
+  const adminSidebar = isMobile ? (
+    <>
+      {/* Mobile: fixed overlay sidebar with slide-in/out transition */}
+      <div
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 transition-transform duration-200",
+          folded ? "-translate-x-full" : "translate-x-0"
+        )}
+      >
+        <AdminSidebar
+          enableCloudSS={enableCloud}
+          folded={false}
+          onFoldClick={() => setFolded(true)}
+        />
+      </div>
+
+      {/* Backdrop to close the sidebar when clicking outside */}
+      <div
+        className={cn(
+          "fixed inset-0 z-40 bg-mask-03 backdrop-blur-03 transition-opacity duration-200",
+          folded
+            ? "opacity-0 pointer-events-none"
+            : "opacity-100 pointer-events-auto"
+        )}
+        onClick={() => setFolded(true)}
+      />
+    </>
+  ) : (
+    <AdminSidebar
+      enableCloudSS={enableCloud}
+      folded={folded}
+      onFoldClick={() => setFolded((prev) => !prev)}
+    />
   );
 
   return (
@@ -81,7 +121,7 @@ export function ClientLayout({ children, enableCloud }: ClientLayoutProps) {
         <div className="flex-1 min-w-0 min-h-0 overflow-y-auto">{children}</div>
       ) : (
         <>
-          <AdminSidebar enableCloudSS={enableCloud} />
+          {adminSidebar}
           <div
             data-main-container
             className={cn(
@@ -89,6 +129,15 @@ export function ClientLayout({ children, enableCloud }: ClientLayoutProps) {
               !hasOwnLayout && "py-10 px-4 md:px-12"
             )}
           >
+            {isMobile && (
+              <div className="p-2">
+                <Button
+                  prominence="internal"
+                  icon={SvgSidebar}
+                  onClick={() => setFolded(false)}
+                />
+              </div>
+            )}
             {children}
           </div>
         </>
