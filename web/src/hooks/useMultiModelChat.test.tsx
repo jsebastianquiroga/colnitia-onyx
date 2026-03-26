@@ -1,4 +1,4 @@
-import { renderHook, act } from "@testing-library/react";
+import { renderHook, act } from "@tests/setup/test-utils";
 import useMultiModelChat from "@/hooks/useMultiModelChat";
 import { LlmManager } from "@/lib/hooks";
 import { SelectedModel } from "@/refresh-components/popovers/ModelSelector";
