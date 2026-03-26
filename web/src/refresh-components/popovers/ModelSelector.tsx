@@ -11,7 +11,6 @@ import {
   SvgCheck,
   SvgChevronDown,
   SvgChevronRight,
-  SvgColumn,
   SvgPlusCircle,
   SvgX,
 } from "@opal/icons";
@@ -24,15 +23,10 @@ import {
   buildLlmOptions,
   groupLlmOptions,
 } from "@/refresh-components/popovers/LLMPopover";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import * as AccordionPrimitive from "@radix-ui/react-accordion";
 import { cn } from "@/lib/utils";
 
-const MAX_MODELS = 3;
+export const MAX_MODELS = 3;
 
 export interface SelectedModel {
   name: string;
@@ -92,16 +86,16 @@ function ModelPill({
         {model.displayName}
       </Text>
       {isMultiModel ? (
-        <button
-          type="button"
+        <Button
+          prominence="tertiary"
+          icon={SvgX}
+          size="2xs"
           onClick={(e) => {
             e.stopPropagation();
             onRemove?.();
           }}
-          className="flex items-center justify-center size-4 shrink-0 hover:opacity-70"
-        >
-          <SvgX className="size-4 stroke-text-03" />
-        </button>
+          tooltip="Remove model"
+        />
       ) : (
         <SvgChevronDown className="size-4 stroke-text-03 shrink-0" />
       )}
@@ -348,18 +342,6 @@ export default function ModelSelector({
                         />,
                       ]}
               </PopoverMenu>
-
-              <div className="border-t border-border-01 mt-1 pt-1">
-                <button
-                  type="button"
-                  className="flex items-center gap-1.5 w-full rounded-08 p-1.5 text-left hover:bg-background-tint-02 transition-colors"
-                >
-                  <SvgColumn className="size-5 stroke-text-03 shrink-0" />
-                  <Text mainUiAction text04>
-                    Compare Model
-                  </Text>
-                </button>
-              </div>
             </Section>
           </Popover.Content>
         </Popover>
@@ -410,7 +392,7 @@ function ModelGroupAccordion({
   const effectiveExpanded = isSearching ? allKeys : expandedGroups;
 
   return (
-    <Accordion
+    <AccordionPrimitive.Root
       type="multiple"
       value={effectiveExpanded}
       onValueChange={(value) => {
@@ -421,31 +403,33 @@ function ModelGroupAccordion({
       {groups.map((group) => {
         const isExpanded = effectiveExpanded.includes(group.key);
         return (
-          <AccordionItem
+          <AccordionPrimitive.Item
             key={group.key}
             value={group.key}
-            className="border-none pt-1"
+            className="pt-1"
           >
-            <AccordionTrigger className="flex items-center rounded-08 hover:no-underline hover:bg-background-tint-02 group [&>svg]:hidden w-full py-1">
-              <div className="flex items-center gap-1 shrink-0">
-                <div className="flex items-center justify-center size-5 shrink-0">
-                  <group.Icon size={16} />
+            <AccordionPrimitive.Header className="flex">
+              <AccordionPrimitive.Trigger className="flex items-center rounded-08 hover:bg-background-tint-02 w-full py-1">
+                <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex items-center justify-center size-5 shrink-0">
+                    <group.Icon size={16} />
+                  </div>
+                  <Text secondaryBody text03 nowrap className="px-0.5">
+                    {group.displayName}
+                  </Text>
                 </div>
-                <Text secondaryBody text03 nowrap className="px-0.5">
-                  {group.displayName}
-                </Text>
-              </div>
-              <div className="flex-1" />
-              <div className="flex items-center justify-center size-6 shrink-0">
-                {isExpanded ? (
-                  <SvgChevronDown className="h-4 w-4 stroke-text-04 shrink-0" />
-                ) : (
-                  <SvgChevronRight className="h-4 w-4 stroke-text-04 shrink-0" />
-                )}
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="pb-0 pt-0">
-              <div className="flex flex-col gap-0.5">
+                <div className="flex-1" />
+                <div className="flex items-center justify-center size-6 shrink-0">
+                  {isExpanded ? (
+                    <SvgChevronDown className="h-4 w-4 stroke-text-04 shrink-0" />
+                  ) : (
+                    <SvgChevronRight className="h-4 w-4 stroke-text-04 shrink-0" />
+                  )}
+                </div>
+              </AccordionPrimitive.Trigger>
+            </AccordionPrimitive.Header>
+            <AccordionPrimitive.Content className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+              <div className="flex flex-col gap-0.5 pt-0 pb-0">
                 {group.options.map((opt) => {
                   const key = `${opt.provider}:${opt.modelName}`;
                   const state = getItemState(key);
@@ -460,10 +444,10 @@ function ModelGroupAccordion({
                   );
                 })}
               </div>
-            </AccordionContent>
-          </AccordionItem>
+            </AccordionPrimitive.Content>
+          </AccordionPrimitive.Item>
         );
       })}
-    </Accordion>
+    </AccordionPrimitive.Root>
   );
 }

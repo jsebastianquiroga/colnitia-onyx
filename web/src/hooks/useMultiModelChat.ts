@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useCallback, useEffect, useMemo } from "react";
-import { SelectedModel } from "@/refresh-components/popovers/ModelSelector";
+import {
+  MAX_MODELS,
+  SelectedModel,
+} from "@/refresh-components/popovers/ModelSelector";
 import { LLMOverride } from "@/app/app/services/lib";
 import { LlmManager } from "@/lib/hooks";
 import { buildLlmOptions } from "@/refresh-components/popovers/LLMPopover";
-
-const MAX_MODELS = 3;
 
 export interface UseMultiModelChatReturn {
   /** Currently selected models for multi-model comparison. */

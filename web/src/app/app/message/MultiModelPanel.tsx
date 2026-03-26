@@ -2,17 +2,16 @@
 
 import { useCallback } from "react";
 import { Button } from "@opal/components";
-import { Hoverable } from "@opal/core";
-import { SvgEyeClosed, SvgMoreHorizontal, SvgX } from "@opal/icons";
+import { SvgEyeClosed, SvgX } from "@opal/icons";
 import Text from "@/refresh-components/texts/Text";
 import { getProviderIcon } from "@/app/admin/configuration/llm/utils";
 import AgentMessage, {
   AgentMessageProps,
 } from "@/app/app/message/messageComponents/AgentMessage";
+import { Section } from "@/layouts/general-layouts";
 import { cn } from "@/lib/utils";
 
 export interface MultiModelPanelProps {
-  /** Index of this model in the selectedModels array (used for Hoverable group key) */
   modelIndex: number;
   /** Provider name for icon lookup */
   provider: string;
@@ -49,19 +48,22 @@ export default function MultiModelPanel({
   const ProviderIcon = getProviderIcon(provider, modelName);
 
   const handlePanelClick = useCallback(() => {
-    if (!isHidden) {
-      onSelect();
-    }
+    if (!isHidden) onSelect();
   }, [isHidden, onSelect]);
 
-  // Hidden/collapsed panel — compact strip: icon + strikethrough name + eye icon
+  // Hidden/collapsed panel — compact strip at fixed 220px
   if (isHidden) {
     return (
-      <div className="flex items-center gap-1.5 rounded-08 bg-background-tint-00 px-2 py-1 opacity-50">
+      <div className="flex items-center gap-1.5 w-[220px] shrink-0 rounded-08 bg-background-tint-00 px-2 py-1 opacity-50 hover:opacity-100 transition-opacity cursor-pointer">
         <div className="flex items-center justify-center size-5 shrink-0">
           <ProviderIcon size={16} />
         </div>
-        <Text secondaryBody text02 nowrap className="line-through">
+        <Text
+          secondaryBody
+          text02
+          nowrap
+          className="line-through flex-1 min-w-0 truncate"
+        >
           {displayName}
         </Text>
         <Button
@@ -75,75 +77,61 @@ export default function MultiModelPanel({
     );
   }
 
-  const hoverGroup = `panel-${modelIndex}`;
-
   return (
-    <Hoverable.Root group={hoverGroup}>
-      <div
-        className="flex flex-col min-w-0 gap-3 cursor-pointer"
-        onClick={handlePanelClick}
-      >
-        {/* Panel header */}
-        <div
-          className={cn(
-            "flex items-center gap-1.5 rounded-12 px-2 py-1",
-            isPreferred ? "bg-background-tint-02" : "bg-background-tint-00"
-          )}
-        >
-          <div className="flex items-center justify-center size-5 shrink-0">
-            <ProviderIcon size={16} />
-          </div>
-          <Text mainUiAction text04 nowrap className="flex-1 min-w-0 truncate">
-            {displayName}
-          </Text>
-          {isPreferred && (
-            <Text secondaryBody nowrap className="text-action-link-05 shrink-0">
-              Preferred Response
-            </Text>
-          )}
-          <Button
-            prominence="tertiary"
-            icon={SvgMoreHorizontal}
-            size="2xs"
-            tooltip="More"
-            onClick={(e) => e.stopPropagation()}
-          />
-          <Button
-            prominence="tertiary"
-            icon={SvgX}
-            size="2xs"
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleVisibility();
-            }}
-            tooltip="Hide response"
-          />
-        </div>
-
-        {/* "Select This Response" hover affordance */}
-        {!isPreferred && !isNonPreferredInSelection && (
-          <Hoverable.Item group={hoverGroup} variant="opacity-on-hover">
-            <div className="flex justify-center pointer-events-none">
-              <div className="flex items-center h-6 bg-background-tint-00 rounded-08 px-1 shadow-sm">
-                <Text
-                  secondaryBody
-                  className="font-semibold text-text-03 px-1 whitespace-nowrap"
-                >
-                  Select This Response
-                </Text>
-              </div>
-            </div>
-          </Hoverable.Item>
+    <Section
+      flexDirection="column"
+      alignItems="stretch"
+      justifyContent="start"
+      height="fit"
+      gap={0.75}
+      className={cn(
+        "min-w-0 cursor-pointer rounded-16 transition-colors",
+        !isPreferred && "hover:bg-background-tint-02"
+      )}
+      onClick={handlePanelClick}
+    >
+      {/* Panel header */}
+      <Section
+        flexDirection="row"
+        alignItems="center"
+        justifyContent="start"
+        height="fit"
+        gap={0.375}
+        className={cn(
+          "rounded-12 px-2 py-1",
+          isPreferred ? "bg-background-tint-02" : "bg-background-tint-00"
         )}
-
-        {/* Response body */}
-        <div className={cn(isNonPreferredInSelection && "pointer-events-none")}>
-          <AgentMessage
-            {...agentMessageProps}
-            hideFooter={isNonPreferredInSelection}
-          />
+      >
+        <div className="flex items-center justify-center size-5 shrink-0">
+          <ProviderIcon size={16} />
         </div>
+        <Text mainUiAction text04 nowrap className="flex-1 min-w-0 truncate">
+          {displayName}
+        </Text>
+        {isPreferred && (
+          <Text secondaryBody nowrap className="text-action-link-05 shrink-0">
+            Preferred Response
+          </Text>
+        )}
+        <Button
+          prominence="tertiary"
+          icon={SvgX}
+          size="2xs"
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleVisibility();
+          }}
+          tooltip="Hide response"
+        />
+      </Section>
+
+      {/* Response body */}
+      <div className={cn(isNonPreferredInSelection && "pointer-events-none")}>
+        <AgentMessage
+          {...agentMessageProps}
+          hideFooter={isNonPreferredInSelection}
+        />
       </div>
-    </Hoverable.Root>
+    </Section>
   );
 }

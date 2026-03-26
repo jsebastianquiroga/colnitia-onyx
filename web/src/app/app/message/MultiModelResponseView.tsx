@@ -138,20 +138,19 @@ export default function MultiModelResponseView({
   // Shared renderer for hidden panels (inline in the flex row)
   const renderHiddenPanels = () =>
     hiddenResponses.map((r) => (
-      <div key={r.modelIndex} className="w-[240px] shrink-0">
-        <MultiModelPanel
-          modelIndex={r.modelIndex}
-          provider={r.provider}
-          modelName={r.modelName}
-          displayName={r.displayName}
-          isPreferred={false}
-          isHidden
-          isNonPreferredInSelection={false}
-          onSelect={() => handleSelectPreferred(r.modelIndex)}
-          onToggleVisibility={() => toggleVisibility(r.modelIndex)}
-          agentMessageProps={buildPanelProps(r, false).agentMessageProps}
-        />
-      </div>
+      <MultiModelPanel
+        key={r.modelIndex}
+        modelIndex={r.modelIndex}
+        provider={r.provider}
+        modelName={r.modelName}
+        displayName={r.displayName}
+        isPreferred={false}
+        isHidden
+        isNonPreferredInSelection={false}
+        onSelect={() => handleSelectPreferred(r.modelIndex)}
+        onToggleVisibility={() => toggleVisibility(r.modelIndex)}
+        agentMessageProps={buildPanelProps(r, false).agentMessageProps}
+      />
     ));
 
   if (showSelectionMode) {
@@ -173,7 +172,7 @@ export default function MultiModelResponseView({
       <div className="w-full relative overflow-hidden">
         {/* Preferred — centered at normal chat width, in flow to set container height */}
         {preferred && (
-          <div className="w-full max-w-[720px] min-w-[400px] mx-auto">
+          <div className="w-full max-w-[640px] min-w-[400px] mx-auto">
             <MultiModelPanel {...buildPanelProps(preferred, false)} />
           </div>
         )}
@@ -219,7 +218,7 @@ export default function MultiModelResponseView({
   return (
     <div className="flex gap-6 items-start justify-center">
       {visibleResponses.map((r) => (
-        <div key={r.modelIndex} className="flex-1 min-w-[400px] max-w-[720px]">
+        <div key={r.modelIndex} className="flex-1 min-w-[400px] max-w-[640px]">
           <MultiModelPanel {...buildPanelProps(r, false)} />
         </div>
       ))}
