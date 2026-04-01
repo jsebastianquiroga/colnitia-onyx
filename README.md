@@ -1,5 +1,22 @@
 <a name="readme-top"></a>
 
+> ## Colnitia GPT Fork
+>
+> This is a customized fork of [Onyx](https://github.com/onyx-dot-app/onyx) for **Colnitia GPT** — an enterprise AI platform for Colombian SMEs.
+>
+> **Branch strategy:**
+> | Branch | Purpose |
+> |---|---|
+> | `main` | Tracks upstream Onyx releases |
+> | `colnitia/main` | All Colnitia customizations (rebranding, budget system, themes) |
+> | `upstream-sync` | Temporary branch for rebasing upstream changes |
+>
+> **License:** MIT (Community Edition). Code in `ee/` directories is NOT modified and remains under the Onyx Enterprise License.
+>
+> **Upstream:** [onyx-dot-app/onyx](https://github.com/onyx-dot-app/onyx)
+>
+> ---
+
 <h2 align="center">
     <a href="https://www.onyx.app/?utm_source=onyx_repo&utm_medium=github&utm_campaign=readme"> <img width="50%" src="https://github.com/onyx-dot-app/onyx/blob/logo/OnyxLogoCropped.jpg?raw=true" /></a>
 </h2>
