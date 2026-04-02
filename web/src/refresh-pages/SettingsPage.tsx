@@ -372,6 +372,12 @@ function GeneralSettings() {
                   >
                     Dark
                   </InputSelect.Item>
+                  <InputSelect.Item
+                    value={ThemePreference.ROSE_PINE}
+                    icon={() => <div className="w-5 h-5 rounded-full bg-[#191724] border border-[#ebbcba]" />}
+                  >
+                    Rosé Pine
+                  </InputSelect.Item>
                 </InputSelect.Content>
               </InputSelect>
             </InputLayouts.Horizontal>

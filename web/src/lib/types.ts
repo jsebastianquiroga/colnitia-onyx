@@ -16,6 +16,7 @@ export enum ThemePreference {
   LIGHT = "light",
   DARK = "dark",
   SYSTEM = "system",
+  ROSE_PINE = "rose-pine",
 }
 
 interface UserPreferences {

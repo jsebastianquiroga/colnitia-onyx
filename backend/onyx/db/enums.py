@@ -225,6 +225,7 @@ class ThemePreference(str, PyEnum):
     LIGHT = "light"
     DARK = "dark"
     SYSTEM = "system"
+    ROSE_PINE = "rose-pine"
 
 
 class DefaultAppMode(str, PyEnum):

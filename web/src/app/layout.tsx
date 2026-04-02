@@ -77,6 +77,7 @@ export default function RootLayout({
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
+          themes={["light", "dark", "rose-pine"]}
         >
           <div className="text-text min-h-screen bg-background">
             <TooltipProvider>

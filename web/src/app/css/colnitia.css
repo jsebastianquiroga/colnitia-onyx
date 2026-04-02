@@ -25,3 +25,27 @@
   --background-neutral-02: #1A2444;
   --background-neutral-03: #1E2A50;
 }
+
+/* Sprint 3: Rosé Pine Theme */
+.rose-pine {
+  --background: #191724;
+  --surface: #1f1d2e;
+  --overlay: #26233a;
+  --muted: #6e6a86;
+  --subtle: #908caa;
+  --text: #e0def4;
+  --love: #eb6f92;
+  --gold: #f6c177;
+  --rose: #ebbcba;
+  --pine: #31748f;
+  --foam: #9ccfd8;
+  --iris: #c4a7e7;
+  --highlight-low: #21202e;
+  --highlight-med: #403d52;
+  --highlight-high: #524f67;
+  /* Overrides for main app variables if needed */
+  --background-neutral-00: #191724;
+  --background-neutral-01: #1f1d2e;
+  --background-neutral-02: #21202e;
+  --background-neutral-03: #26233a;
+}
