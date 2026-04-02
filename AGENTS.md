@@ -291,6 +291,57 @@ will be tailing their logs to this file.
 - Token management and rate limiting
 - Custom prompts and agent actions
 
+## Built-in Tools Architecture
+
+Onyx has a pluggable tool system for extending chat capabilities. Built-in tools are registered globally and available to all personas unless explicitly disabled.
+
+### Adding a New Built-in Tool
+
+1. **Create the tool class** at `backend/onyx/tools/tool_implementations/{tool_name}/{tool_name}_tool.py`:
+   - Extend `Tool` from `onyx.tools.interface`
+   - Implement `tool_definition()` → JSON schema for LLM
+   - Implement `run()` → executes tool, returns `ToolResponse`
+   - Implement `emit_start()` → emits streaming start packet (called by framework before `run()`)
+   - Use `ToolCallException` for invalid LLM args, `ToolExecutionException` for runtime failures
+
+2. **Create response model** at `backend/onyx/tools/tool_implementations/{tool_name}/models.py`:
+   - Pydantic model(s) for the tool's rich response
+   - Add import and type to `ToolResponse.rich_response` union in `backend/onyx/tools/models.py`
+
+3. **Add streaming packet types** in `backend/onyx/server/query_and_chat/streaming_models.py`:
+   - Add enum values to `StreamingType` (e.g., `TOOL_NAME_START`, `TOOL_NAME_FINAL`)
+   - Create packet classes (e.g., `ToolNameStart`, `ToolNameFinal`) with correct type literals
+   - Add to `PacketObj` union with discriminator
+
+4. **Register in tool constructor** at `backend/onyx/tools/tool_constructor.py`:
+   - Add elif branch: `if tool_cls.__name__ == ToolClassName.__name__:`
+   - Instantiate with required parameters (varies per tool; most need `tool_id` + `emitter`)
+   - Add import at top
+
+5. **Register in built-in tools** (usually already done):
+   - Entry in `BUILT_IN_TOOL_MAP` in `backend/onyx/tools/built_in_tools.py`
+   - Entry in `STOPPING_TOOLS_NAMES` (if tool stops agent loop after execution)
+   - DB migration to seed tool record in `tool` table with `in_code_tool_id`
+
+6. **Write tests** at `backend/tests/external_dependency_unit/tools/test_{tool_name}_tool.py`:
+   - Test instantiation, schema, valid input, error cases
+   - Test all variants/modes if applicable
+   - Test streaming packet emission
+
+### Pattern Examples
+
+- **Stateless deterministic tools** (PresentationsTool, PythonTool): Only need `tool_id` + `emitter`
+- **Tools with LLM config** (ImageGenerationTool): Need credentials from DB + LLM provider config
+- **Tools with search** (SearchTool): Need document index, user context, filters
+- **Tools with external APIs** (WebSearchTool, OpenURLTool): Need API keys from config
+
+### Key Patterns
+
+- **Graceful fallback**: Optional features should silently fail; tool succeeds with what's available
+- **Rich response + LLM response**: Return typed `rich_response` (for UI) and JSON `llm_facing_response` (for LLM context)
+- **Iterative editing**: Include full state (e.g., slides_data) in LLM-facing response so LLM can reference it on re-calls
+- **Streaming lifecycle**: Start packet before execution, final packet with results, error packets on failure
+
 ## Creating a Plan
 
 When creating a plan in the `plans` directory, make sure to include at least these elements:

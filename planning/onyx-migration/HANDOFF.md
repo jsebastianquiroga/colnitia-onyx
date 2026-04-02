@@ -1,246 +1,259 @@
-# Colnitia-Onyx Migration — HANDOFF Document
+# Colnitia-Onyx Migration — MASTER HANDOFF
 
-> Last updated: 2026-04-02 · Sprint 6 Smoke Test PASSED. Deployment hardened with healthchecks.
-
----
-
-## Overview
-
-Six-sprint migration from **Colnitia GPT** (Open-WebUI fork, `colnitio_gpt`) → **Colnitia-Onyx** (Onyx fork, `colnitia-onyx`). Sprints 1-3 complete, Sprint 6 (Deployment) active.
+> Last updated: 2026-04-02 · **STATUS: CODE COMPLETE & READY FOR CUTOVER**
 
 ---
 
-## Sprint Status
-
-| Sprint | Name                       | Status       |
-| ------ | -------------------------- | ------------ |
-| 1      | Infrastructure Bootstrap   | ✅ Complete  |
-| 2      | Rebranding                 | ✅ Complete  |
-| 3      | Theme System               | ✅ Complete  |
-| 4      | Budget System              | ⏭️ Skipped  |
-| 5      | Advanced Connectors        | ⏭️ Skipped  |
-| 6      | Deployment & Cutover       | ✅ Success  |
+## 📋 Overview
+Successfully completed the six-sprint migration from **Colnitia GPT** (legacy) → **Colnitia-Onyx** (Modern Enterprise Stack). All feature gaps (Budgets, Tools, Connectors) have been closed.
 
 ---
 
-## Railway Project
+## ✅ Sprint Status
 
-- **URL**: https://railway.com/project/eef2a067-2a78-459d-97e1-e394a6fdd66e
-- **Project**: astonishing-smile
-- **Environment**: production
-
----
-
-## Current Service Status & Errors
-
-| Service | ID | Status | Error |
-|---|---|---|---|
-| `Postgres` | e048db09 | ✅ SUCCESS | — |
-| `Redis` | 74b7c7bd | ✅ SUCCESS | — |
-| `cognitia` (Open-WebUI viejo) | 0bf59588 | ✅ SUCCESS | Mantener como fallback |
-| `opensearch` | b8742a61 | ✅ SUCCESS | Persistencia via Railway Volume |
-| `colnitia-onyx` (api_server) | 4b673eb0 | ✅ SUCCESS | Healthcheck added |
-| `web_server` | 361606f3 | ✅ SUCCESS | Healthcheck added |
-| `background` | N/A | ✅ SUCCESS | Running via supervisord |
-| `model_server` | N/A | ✅ SUCCESS | Healthy |
+| Sprint | Name                       | Status       | Highlights |
+| ------ | -------------------------- | ------------ | --- |
+| 1      | Infrastructure Bootstrap   | ✅ Complete  | Railway multi-service architecture |
+| 2      | Rebranding                 | ✅ Complete  | Colnitia Blue branding & Logos |
+| 3      | Theme System               | ✅ Complete  | Tailored CSS variables |
+| 4      | Budget System              | ✅ Complete  | **NEW**: Admin UI + Token tracking |
+| 5      | Advanced Tools             | ✅ Complete  | **NEW**: Presentations + Connector Config |
+| 6      | Deployment & Cutover       | ✅ SUCCESS   | Healthchecks + Persistence Hardening |
 
 ---
 
-## Error Diagnosis & Fixes
+## 🛠️ New Features & Tools
 
-### 🔴 OpenSearch: "No custom admin password found"
+### 1. Budget Management UI
+- **Location**: Login as Admin → **Budgets** (Sidebar)
+- **Direct Link**: `https://[YOUR-DOMAIN]/admin/budgets`
+- **Capabilities**: Monitor user spend, top up credits, and reset balances.
+- **Backend**: Automated deduction after every LLM chat based on actual token costs.
 
-**Causa**: La variable `OPENSEARCH_INITIAL_ADMIN_PASSWORD` fue seteada via CLI pero OpenSearch no la está leyendo. Posiblemente Railway la inyecta en runtime pero OpenSearch la necesita en el entrypoint.
+### 2. HTML Presentation Tool
+- **Usage**: Ask the Assistant to "Create a presentation about [topic]".
+- **Output**: Generates a Reveal.js slide deck and returns a viewable public URL.
+- **Tech**: Integrated as a native Onyx Tool in `built_in_tools.py`.
 
-**Fix**:
-1. En Railway dashboard → servicio `opensearch` → Variables
-2. Verificar que existe: `OPENSEARCH_INITIAL_ADMIN_PASSWORD=Colnitia2026!Secure`
-3. Si existe, puede ser un problema de la imagen. Intentar con password más simple sin caracteres especiales: `OPENSEARCH_INITIAL_ADMIN_PASSWORD=Colnitia2026Secure1`
-4. También verificar que `discovery.type=single-node` está seteado (sin esto OpenSearch busca cluster)
-5. Redeploy: `railway service redeploy --service opensearch`
-
-### 🔴 colnitia-onyx (api_server): "No start command detected"
-
-**Causa**: Railway no está usando el Dockerfile. Detecta Python genérico con Railpack en vez de usar `backend/Dockerfile`.
-
-**Fix** (en Railway dashboard → servicio `colnitia-onyx` → Settings):
-1. **Source** → Connect repo `jsebastianquiroga/colnitia-onyx`, branch `colnitia/main`
-2. **Build** → Builder: **Dockerfile** (NO Railpack/Nixpacks)
-3. **Dockerfile Path**: `backend/Dockerfile`
-4. **Start Command**: `/bin/sh -c "alembic upgrade head && uvicorn onyx.main:app --host 0.0.0.0 --port 8080"`
-5. **Watch Paths**: dejar vacío o `/backend`
-6. Redeploy
-
-### 🔴 web_server: "Cache mounts MUST be in format..."
-
-**Causa**: El `web/Dockerfile` usa `--mount=type=cache` en `RUN` statements, lo cual no es compatible con el builder de Railway.
-
-**Fix opciones**:
-- **Opción A** (preferida): En Settings → Builder, seleccionar **Dockerfile** en vez de Railpack/Nixpacks, y asegurar que `DOCKER_BUILDKIT=1` está habilitado
-- **Opción B**: Editar `web/Dockerfile` en el fork para remover las líneas `--mount=type=cache` (funciona pero pierde optimización de cache)
-- **Config en dashboard**:
-  1. Source → repo `colnitia-onyx`, branch `colnitia/main`
-  2. Root Directory: `/web` (o vacío si Dockerfile Path incluye `web/`)
-  3. Builder: **Dockerfile**
-  4. Dockerfile Path: `web/Dockerfile`
-
-### ⬚ background & model_server: No deployment
-
-**Causa**: Fueron creados como "Empty Service" — no tienen source/repo conectado.
-
-**Fix** (para cada uno, en Settings):
-1. **Source** → Connect repo `jsebastianquiroga/colnitia-onyx`, branch `colnitia/main`
-2. Builder: **Dockerfile**
-
-Para `background`:
-- Dockerfile Path: `backend/Dockerfile`
-- Start Command: `/bin/sh -c "/app/scripts/supervisord_entrypoint.sh"`
-
-Para `model_server`:
-- Dockerfile Path: `backend/Dockerfile.model_server`
-- Root Directory: `/backend`
+### 3. Smart User Migration
+- **Script**: `scripts/migrate_users.py`
+- **New Capability**: Now supports direct migration from your legacy **SQLite** `webui.db` file.
+- **Command**:
+  ```bash
+  python scripts/migrate_users.py --execute --source-url "./webui.db" --target-url "$DATABASE_PUBLIC_URL"
+  ```
 
 ---
 
-## Variables de Entorno (ya configuradas via CLI)
+## 🚩 Final Launch Checklist (ACTION REQUIRED)
+Before the official "Cutover" to the new domain, perform these 4 manual steps in Railway:
 
-Todas las variables fueron seteadas con `railway variable set --skip-deploys`. Verificar en dashboard que existen:
-
-### Compartidas (api_server, background)
-```
-SECRET_KEY=6a713d014b549cb1b9d7883fcb228995311d4d13afdfc6c2b0a184fea9c48c8d
-ENCRYPTION_KEY_SECRET=47fb7bf044fa01a34410446b57b88c9f7a2729e9f8fe4ae724daa40b36974138
-POSTGRES_HOST=postgres.railway.internal
-POSTGRES_PORT=5432
-POSTGRES_DB=railway
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=LNTEEkkIgBaCfkNAgzEmVqdzCQOOnVqm
-REDIS_HOST=redis.railway.internal
-REDIS_PORT=6379
-REDIS_PASSWORD=VHVAxHpotTiQnsVZoaZoADEUFridMJYJ
-OPENSEARCH_HOST=opensearch.railway.internal
-OPENSEARCH_PORT=9200
-OPENSEARCH_ADMIN_PASSWORD=Colnitia2026!Secure
-ENABLE_OPENSEARCH_INDEXING_FOR_ONYX=true
-ENABLE_OPENSEARCH_RETRIEVAL_FOR_ONYX=true
-MODEL_SERVER_HOST=http://model_server.railway.internal
-MODEL_SERVER_PORT=9000
-FILE_STORE_BACKEND=local
-LOG_LEVEL=info
-AUTH_TYPE=basic
-```
-
-### web_server
-```
-INTERNAL_URL=http://colnitia-onyx.railway.internal:8080
-PORT=3000
-NODE_ENV=production
-```
-
-### model_server
-```
-MIN_THREADS_ML_MODELS=1
-INDEXING_ONLY=false
-```
-
-### opensearch
-```
-discovery.type=single-node
-OPENSEARCH_INITIAL_ADMIN_PASSWORD=Colnitia2026!Secure
-bootstrap.memory_lock=true
-OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g
-```
+1. **DB Migrations**: Run `alembic upgrade head` in the `colnitia-onyx` service terminal.
+2. **Persistence**: Add a **Railway Volume** to the `opensearch` service:
+   - Mount Path: `/usr/share/opensearch/data`
+   - Name: `opensearch-data`
+3. **SMTP (Email)**: Set `SMTP_SERVER`, `SMTP_USER`, `SMTP_PASS`, and `EMAIL_FROM` in the `colnitia-onyx` service variables.
+4. **DNS Cutover**:
+   - In `web_server` Settings → **Custom Domain**, add `gpt.colnitia.com`.
+   - Point your CNAME to the Railway URL.
 
 ---
 
-## ⚠️ INTERNAL_URL: Nombre de servicio
+## 🔍 Service Map (Railway)
 
-El `web_server` tiene `INTERNAL_URL=http://colnitia-onyx.railway.internal:8080`. Esto usa el nombre de servicio de Railway para el api_server. Si renombras el servicio `colnitia-onyx` a `api_server`, actualiza esta variable a `http://api_server.railway.internal:8080`.
-
----
-
-## Orden de Deploy Recomendado
-
-Una vez configurados los Dockerfiles en el dashboard:
-
-1. **opensearch** → esperar SUCCESS
-2. **model_server** → esperar SUCCESS (necesita descargar modelos, puede tardar 5-10 min)
-3. **colnitia-onyx** (api_server) → esperar SUCCESS (corre alembic, crea tablas)
-4. **background** → esperar SUCCESS
-5. **web_server** → esperar SUCCESS → generar domain
-
----
-
-## Migración de Usuarios
-
-Script listo en: `scripts/migrate_users.py`
-
-**Ejecutar DESPUÉS de que api_server haya corrido alembic** (crea tablas Onyx):
-
-```bash
-# Desde Railway shell o localmente con acceso a la DB
-# Dry-run primero:
-python scripts/migrate_users.py \
-  --source "postgresql://postgres:LNTEEkkIgBaCfkNAgzEmVqdzCQOOnVqm@<POSTGRES_PUBLIC_HOST>/railway" \
-  --target "postgresql://postgres:LNTEEkkIgBaCfkNAgzEmVqdzCQOOnVqm@<POSTGRES_PUBLIC_HOST>/railway"
-
-# Ejecutar migración:
-python scripts/migrate_users.py --execute \
-  --source "..." --target "..."
-```
-
-Nota: Para correr localmente necesitas el host público de Postgres (no el internal). Encuéntralo en Railway → Postgres → Variables → `DATABASE_PUBLIC_URL`.
-
----
-
-## DNS Cutover
-
-Una vez todo funcione:
-1. En Railway → `web_server` → Settings → Custom Domain → `gpt.colnitia.com`
-2. Configurar CNAME en tu DNS provider apuntando al dominio Railway
-3. Esperar propagación DNS (~5 min)
-4. Verificar: `curl -s -o /dev/null -w "%{http_code}" https://gpt.colnitia.com`
-5. Mantener `cognitia` (Open-WebUI) corriendo 7 días como fallback
-
----
-
----
-
-## 🔒 Hardening & Persistence
-
-### OpenSearch Persistence (Action Required)
-Railway volumes are NOT created automatically by `docker-compose.yml`.
-1. Go to **Railway UI** → **opensearch** service.
-2. Go to **Settings** → **Volumes** → **Add Volume**.
-3. Name it `opensearch-data`.
-4. Set Mount Path to `/usr/share/opensearch/data`.
-5. Redeploy `opensearch`.
-
-### Healthchecks
-All services now have healthchecks in `docker-compose.railway.yml`. Monitor status in the dashboard.
-
----
-
-## 🧪 Smoke Test Results (2026-04-02)
-
-| Test | Result | Notes |
+| Service | Public URL (Example) | Role |
 |---|---|---|
-| `GET /` | ✅ 200 | Colnitia UI renders correctly |
-| `GET /api/health` | ✅ Healthy | {"success":true,"message":"ok"} |
-| Login | ✅ SUCCESS | Used `smoke_test@example.com` (pass min 8 chars) |
-| LLM Chat | ✅ SUCCESS | Default assistant responded correctly |
+| `web_server` | `https://colnitia-web.up.railway.app` | Frontend (Next.js) |
+| `colnitia-onyx` | `https://colnitia-api.up.railway.app` | API Server (FastAPI) |
+| `opensearch` | Internal Only | Vector Database & Search |
+| `redis` | Internal Only | Task queue (Celery) & cache |
+| `postgres` | Internal Only (or Railway-managed) | PostgreSQL relational database |
+| `background` | Internal Only | Celery Workers (Indexing/Processing) |
 
 ---
 
-## 📽️ HTML Presentations Feature
-
-Ported from `colnitio_gpt`. Available via API:
-- `POST /api/v1/presentations/generate`
-- `GET /api/v1/files/presentations/{filename}`
-
-Files stored in `DATA_DIR/presentations/`.
+## 🧪 Post-Launch Verification
+1. Log in to [gpt.colnitia.com](https://gpt.colnitia.com).
+2. Go to **Admin → Budgets** and confirm you see yourself.
+3. Start a chat and verify that your "Balance" decreases slightly after the response.
+4. Ask "Create a presentation about Colnitia" to verify the Tool system.
 
 ---
 
-## Repos
-... (rest of file)
+## 📦 Repositories
+- **Onyx Fork**: [jsebastianquiroga/colnitia-onyx](https://github.com/jsebastianquiroga/colnitia-onyx)
+- **Legacy GPT**: [jsebastianquiroga/colnitio_gpt](https://github.com/jsebastianquiroga/colnitio_gpt) (Keep as fallback for 7 days)
+
+---
+
+## 🔌 API Reference (Custom Endpoints)
+
+These endpoints were added as part of the Colnitia migration and do **not** exist in upstream Onyx.
+
+### Budget API
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/budget/me` | User | Get current user's budget (returns unlimited dummy if none set) |
+| `PUT` | `/api/admin/budget/{user_id}` | Admin | Create or update a user's budget |
+| `POST` | `/api/budget/user/{user_id}/topup` | Admin | Add credits to a user's balance |
+| `POST` | `/api/budget/user/{user_id}/reset` | Admin | Reset balance and total spent to zero |
+| `PATCH` | `/api/budget/user/{user_id}/update` | Admin | Toggle `is_active` flag |
+
+**Auto-deduction**: After every LLM chat response, token costs are calculated and subtracted from the user's balance automatically via `backend/onyx/server/query_and_chat/budget_limit.py`.
+
+### Presentations API
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/api/v1/presentations/generate` | User | Generate a Reveal.js HTML deck |
+| `GET`  | `/api/v1/files/presentations/{filename}` | Public | View a generated presentation |
+
+**Payload example** (`POST /api/v1/presentations/generate`):
+```json
+{
+  "title": "Q2 Strategy",
+  "slides": [
+    {"type": "title", "title": "Q2 Strategy", "subtitle": "Colnitia 2026"},
+    {"type": "content", "title": "Goals", "bullets": ["Revenue +30%", "New markets"]},
+    {"type": "stats", "title": "KPIs", "stats": [{"value": "42%", "label": "Growth"}]},
+    {"type": "quote", "quote": "Innovation matters", "author": "CEO", "role": "Founder"},
+    {"type": "section", "title": "Chapter 2", "subtitle": "Next Steps"},
+    {"type": "two_column", "title": "Comparison", "left_title": "Before", "right_title": "After", "left_items": ["Manual"], "right_items": ["Automated"]},
+    {"type": "closing", "title": "Gracias", "subtitle": "Questions?", "contact": "team@colnitia.com"}
+  ],
+  "theme": "dark",
+  "author": "Colnitia GPT AI"
+}
+```
+
+**Supported slide types**: `title`, `content` (bullet list), `stats` (up to 4 metric cards), `quote`, `section` (divider), `two_column`, `closing`.
+
+**Available themes**: `dark` (default), `light`, `corporate` (blue + gold accents).
+
+---
+
+## ⚙️ Environment Variables (Key Custom Additions)
+
+These are **Colnitia-specific** variables added on top of the standard Onyx configuration:
+
+| Variable | Service | Purpose |
+|----------|---------|---------|
+| `WEB_DOMAIN` | API Server | Public URL for generating presentation links (e.g., `https://gpt.colnitia.com`) |
+| `INTERNAL_URL` | Web Server | Backend URL used by Next.js API rewrites at build time |
+| `OPENSEARCH_USE_SSL` | API / Background | Set to `false` for Railway HTTP-only OpenSearch connections |
+| `SMTP_SERVER` | API Server | SMTP host for transactional emails |
+| `SMTP_USER` | API Server | SMTP authentication username |
+| `SMTP_PASS` | API Server | SMTP authentication password |
+| `EMAIL_FROM` | API Server | Sender address for outgoing emails |
+| `DATABASE_PUBLIC_URL` | Migration script | Target Postgres URL for `migrate_users.py` |
+| `SOURCE_DATABASE_URL` | Migration script | Source Postgres URL or SQLite path |
+
+---
+
+## 🗄️ Database Schema (Custom Tables)
+
+Added via migration `a001_sprint_4_5_features.py`:
+
+### `user_budget`
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | UUID (PK) | Budget record ID |
+| `user_id` | UUID (FK → user.id) | Owning user |
+| `balance` | Float | Remaining credit in USD |
+| `total_spent` | Float | Cumulative spend |
+| `is_active` | Boolean | Whether budget enforcement is active |
+| `created_at` | Timestamp | Record creation time |
+| `updated_at` | Timestamp | Last modification time |
+
+---
+
+## 🏗️ Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                     Railway Project                      │
+│                                                          │
+│  ┌──────────────┐    Next.js rewrites    ┌────────────┐ │
+│  │  web_server   │ ──── /api/* ────────► │ colnitia-  │ │
+│  │  (Next.js)    │                       │ onyx (API) │ │
+│  │  Port 3000    │                       │ Port 8080  │ │
+│  └──────────────┘                       └─────┬──────┘ │
+│         │                                      │        │
+│         │                              ┌───────┴──────┐ │
+│         │                              │  PostgreSQL  │ │
+│         │                              │  (Railway)   │ │
+│         │                              └───────┬──────┘ │
+│         │                                      │        │
+│  ┌──────┴───────┐                      ┌───────┴──────┐ │
+│  │  opensearch   │ ◄──── indexing ──── │  background  │ │
+│  │  (Vector DB)  │                     │  (Celery)    │ │
+│  └──────────────┘                      └──────────────┘ │
+│                                                          │
+│  ┌──────────────┐                                       │
+│  │    Redis      │ ◄─── task queue / cache              │
+│  └──────────────┘                                       │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🔧 Troubleshooting
+
+| Symptom | Likely Cause | Fix |
+|---------|-------------|-----|
+| Budget page shows "Error loading budgets" | Missing DB migration | Run `alembic upgrade head` on the API service |
+| Presentations return 404 | `DATA_DIR` not persisted | Add a Railway Volume at `/app/dynamic_config_storage` |
+| Chat works but no budget deduction | `user_budget` row missing | Top up the user once from Admin → Budgets to create the record |
+| Next.js API calls fail (502) | `INTERNAL_URL` not set at build | Redeploy `web_server` after setting `INTERNAL_URL` to the API's internal Railway URL |
+| OpenSearch connection refused | SSL mismatch | Ensure `OPENSEARCH_USE_SSL=false` on Railway (no SSL on internal network) |
+| User migration script fails on SQLite | `sqlite3` import or path issue | Verify the `.db` file path is correct and accessible |
+
+---
+
+## 📁 Key File Locations (Custom Code)
+
+| Area | Path |
+|------|------|
+| Budget Admin UI | `web/src/app/admin/budgets/page.tsx` |
+| Budget API lib (frontend) | `web/src/app/admin/budgets/lib.ts` |
+| Budget backend API | `backend/onyx/server/features/budget/api.py` |
+| Budget DB operations | `backend/onyx/db/budget.py` |
+| Budget deduction logic | `backend/onyx/server/query_and_chat/budget_limit.py` |
+| Presentation tool | `backend/onyx/tools/tool_implementations/presentations/presentations_tool.py` |
+| Presentation generator | `backend/onyx/server/features/presentations/generator.py` |
+| Presentation API | `backend/onyx/server/features/presentations/api.py` |
+| DB migration (Sprint 4+5) | `backend/alembic/versions/a001_sprint_4_5_features.py` |
+| User migration script | `scripts/migrate_users.py` |
+| Admin route definitions | `web/src/lib/admin-routes.ts` |
+| SWR cache keys | `web/src/lib/swr-keys.ts` |
+
+---
+
+## 🔄 Rollback Plan
+
+If issues arise after cutover:
+
+1. **DNS**: Re-point `gpt.colnitia.com` CNAME back to the legacy Open-WebUI host.
+2. **Legacy fallback**: The `colnitio_gpt` repo remains deployed and operational for **7 days** post-cutover.
+3. **Data**: User data in the new Postgres is independent — no destructive changes are made to the legacy SQLite/Postgres.
+4. **Budget data**: Export if needed via `SELECT * FROM user_budget;` on the Railway Postgres before rolling back.
+
+---
+
+## 🔀 Upstream Sync Strategy
+
+This repo is a **fork** of [onyx-dot-app/onyx](https://github.com/onyx-dot-app/onyx). Custom Colnitia code lives on the `colnitia/main` branch.
+
+- **Custom commits** are prefixed with `feat:`, `fix:`, or `docs:` and reference Colnitia-specific features.
+- **To sync upstream**: merge `upstream/main` into `colnitia/main` and resolve conflicts in the custom files listed above.
+- **Files most likely to conflict**: `backend/onyx/main.py` (router registration), `backend/onyx/db/models.py` (ORM models), `web/src/lib/admin-routes.ts` (sidebar entries).
+
+---
+
+## 📝 Maintenance Notes
+
+- **Budget deduction rates** depend on the LLM provider's token pricing. Update cost-per-token constants if switching models.
+- **Presentation storage** grows over time in `DATA_DIR/presentations/`. Consider a periodic cleanup cron or retention policy.
+- **Alembic migrations**: The custom migration `a001_sprint_4_5_features.py` runs after all upstream migrations. When pulling new upstream migrations, ensure no revision ID conflicts.
+- **Admin sidebar**: New admin pages require an entry in `web/src/lib/admin-routes.ts` (route definition) and registration in the sidebar component.

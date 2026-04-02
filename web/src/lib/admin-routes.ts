@@ -222,6 +222,12 @@ export const ADMIN_ROUTES = {
     title: "Plans & Billing",
     sidebarLabel: "Plans & Billing",
   },
+  BUDGETS: {
+    path: "/admin/budgets",
+    icon: SvgWallet,
+    title: "Budget Management",
+    sidebarLabel: "Budgets",
+  },
   INDEX_MIGRATION: {
     path: "/admin/document-index-migration",
     icon: SvgArrowExchange,

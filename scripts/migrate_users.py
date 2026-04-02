@@ -22,15 +22,15 @@ import argparse
 import os
 import sys
 import uuid
-
+import sqlite3
 import psycopg2  # type: ignore
 import psycopg2.extras  # type: ignore
 
 ROLE_MAP: dict[str, tuple[str, bool]] = {
     # source_role -> (target_role, is_superuser)
-    "admin": ("admin", True),
-    "user": ("basic", False),
-    "pending": ("limited", False),
+    "admin": ("ADMIN", True),
+    "user": ("BASIC", False),
+    "pending": ("LIMITED", False),
 }
 
 SOURCE_QUERY = """
@@ -63,13 +63,27 @@ def table_exists(conn, table_name: str) -> bool:
 
 
 def fetch_source_users(source_url: str) -> list[dict]:
-    conn = psycopg2.connect(source_url)
-    try:
-        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+    if source_url.startswith("postgresql://"):
+        conn = psycopg2.connect(source_url)
+        try:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute(SOURCE_QUERY)
+                return [dict(row) for row in cur.fetchall()]
+        finally:
+            conn.close()
+    else:
+        # Assume SQLite file path
+        if not os.path.exists(source_url):
+            raise FileNotFoundError(f"SQLite database not found at {source_url}")
+        
+        conn = sqlite3.connect(source_url)
+        conn.row_factory = sqlite3.Row
+        try:
+            cur = conn.cursor()
             cur.execute(SOURCE_QUERY)
             return [dict(row) for row in cur.fetchall()]
-    finally:
-        conn.close()
+        finally:
+            conn.close()
 
 
 def migrate(source_url: str, target_url: str, *, execute: bool = False) -> None:
@@ -154,7 +168,7 @@ def main() -> None:
     parser.add_argument(
         "--source-url",
         default=os.environ.get("SOURCE_DATABASE_URL"),
-        help="Source (Open-WebUI) Postgres URL [env: SOURCE_DATABASE_URL]",
+        help="Source (Open-WebUI) Postgres URL or SQLite file path [env: SOURCE_DATABASE_URL]",
     )
     parser.add_argument(
         "--target-url",

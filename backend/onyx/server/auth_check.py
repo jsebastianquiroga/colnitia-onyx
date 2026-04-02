@@ -63,6 +63,8 @@ PUBLIC_ENDPOINT_SPECS = [
     # craft webapp proxy — access enforced per-session via sharing_scope in handler
     ("/build/sessions/{session_id}/webapp", {"GET"}),
     ("/build/sessions/{session_id}/webapp/{path:path}", {"GET"}),
+    # public presentation file serving (Colnitia)
+    ("/files/presentations/{filename}", {"GET"}),
 ]
 
 

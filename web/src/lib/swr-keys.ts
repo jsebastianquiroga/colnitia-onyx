@@ -178,4 +178,9 @@ export const SWR_KEYS = {
 
   // ── Connectors ────────────────────────────────────────────────────────────
   connector: "/api/manage/connector",
+
+  // ── Budgets (Custom) ──────────────────────────────────────────────────────
+  budgets: "/api/budget/users",
+  userBudget: (userId: string) => `/api/budget/user/${userId}`,
+  myBudget: "/api/budget/me",
 } as const;
