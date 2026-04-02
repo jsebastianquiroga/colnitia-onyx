@@ -90,16 +90,10 @@ const nextConfig = {
         }/:path*`,
       },
       {
-        source: "/api/docs/:path*", // catch /api/docs and /api/docs/...
+        source: "/api/:path*",
         destination: `${
           process.env.INTERNAL_URL || "http://localhost:8080"
-        }/docs/:path*`,
-      },
-      {
-        source: "/api/docs", // if you also need the exact /api/docs
-        destination: `${
-          process.env.INTERNAL_URL || "http://localhost:8080"
-        }/docs`,
+        }/:path*`,
       },
       {
         source: "/openapi.json",
