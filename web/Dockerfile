@@ -79,6 +79,9 @@ ENV SENTRY_RELEASE=${SENTRY_RELEASE}
 # Add NODE_OPTIONS argument
 ARG NODE_OPTIONS
 
+# Set INTERNAL_URL for Next.js rewrites — Railway internal domain for api_server
+ENV INTERNAL_URL=http://apiserver.railway.internal:8080
+
 # Build the Next.js application
 RUN NODE_OPTIONS="${NODE_OPTIONS}" npx next build
 
