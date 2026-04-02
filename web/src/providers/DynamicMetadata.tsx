@@ -2,12 +2,13 @@
 
 import { useEffect, useMemo } from "react";
 import { useSettingsContext } from "@/providers/SettingsProvider";
+import { APP_NAME } from "@/lib/colnitia/brand";
 
 export default function DynamicMetadata() {
   const { enterpriseSettings } = useSettingsContext();
 
   useEffect(() => {
-    const title = enterpriseSettings?.application_name || "Onyx";
+    const title = enterpriseSettings?.application_name || APP_NAME;
     if (document.title !== title) {
       document.title = title;
     }
@@ -22,7 +23,7 @@ export default function DynamicMetadata() {
 
   const favicon = enterpriseSettings?.use_custom_logo
     ? `/api/enterprise-settings/logo?v=${cacheBuster}`
-    : "/onyx.ico";
+    : "/colnitia.ico";
 
   return <link rel="icon" href={favicon} />;
 }

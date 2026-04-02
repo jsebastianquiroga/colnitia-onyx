@@ -264,10 +264,10 @@ export default function AdminSidebar({ enableCloudSS }: AdminSidebarProps) {
               <Text text03 secondaryAction>
                 <a
                   className="underline"
-                  href="https://onyx.app"
+                  href="https://colnitia.com"
                   target="_blank"
                 >
-                  Onyx
+                  Colnitia GPT
                 </a>
               </Text>
               <Text text03 secondaryBody>

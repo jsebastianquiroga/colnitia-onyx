@@ -18,6 +18,7 @@ import AppHealthBanner from "@/sections/AppHealthBanner";
 import CustomAnalyticsScript from "@/providers/CustomAnalyticsScript";
 import ProductGatingWrapper from "@/providers/ProductGatingWrapper";
 import SWRConfigProvider from "@/providers/SWRConfigProvider";
+import { APP_NAME, APP_DESCRIPTION } from "@/lib/colnitia/brand";
 
 const hankenGrotesk = Hanken_Grotesk({
   subsets: ["latin"],
@@ -26,8 +27,8 @@ const hankenGrotesk = Hanken_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "Onyx",
-  description: "Question answering for your documents",
+  title: APP_NAME,
+  description: APP_DESCRIPTION,
 };
 
 // force-dynamic prevents Next.js from statically prerendering pages at build

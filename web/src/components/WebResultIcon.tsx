@@ -17,11 +17,11 @@ export function WebResultIcon({
   try {
     hostname = new URL(url).hostname;
   } catch (e) {
-    hostname = "onyx.app";
+    hostname = "colnitia.com";
   }
   return (
     <>
-      {hostname.includes("onyx.app") ? (
+      {hostname.includes("colnitia.com") ? (
         <OnyxIcon size={size} className="dark:text-[#fff] text-[#000]" />
       ) : !error ? (
         <img

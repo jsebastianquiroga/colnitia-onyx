@@ -10,6 +10,8 @@ import Text from "@/refresh-components/texts/Text";
 import Truncated from "@/refresh-components/texts/Truncated";
 import { useMemo } from "react";
 import { SvgOnyxLogo, SvgOnyxLogoTyped } from "@opal/icons";
+import { ColnitiaLogo } from "@/lib/colnitia/ColnitiaLogo";
+import { POWERED_BY_TEXT } from "@/lib/colnitia/brand";
 
 export interface LogoProps {
   folded?: boolean;
@@ -50,9 +52,9 @@ export default function Logo({ folded, size, className }: LogoProps) {
       />
     </div>
   ) : (
-    <SvgOnyxLogo
+    <ColnitiaLogo
       size={resolvedSize}
-      className={cn("flex-shrink-0", className)}
+      className={className}
     />
   );
 
@@ -76,7 +78,7 @@ export default function Logo({ folded, size, className }: LogoProps) {
                 className={"line-clamp-1 truncate"}
                 nowrap
               >
-                Powered by Onyx
+                {POWERED_BY_TEXT}
               </Text>
             )}
           </div>
@@ -99,11 +101,11 @@ export default function Logo({ folded, size, className }: LogoProps) {
   return applicationName ? (
     renderNameAndPoweredBy({ includeLogo: true, includeName: true })
   ) : folded ? (
-    <SvgOnyxLogo
+    <ColnitiaLogo
       size={resolvedSize}
-      className={cn("flex-shrink-0", className)}
+      className={className}
     />
   ) : (
-    <SvgOnyxLogoTyped size={resolvedSize} className={className} />
+    <ColnitiaLogo size={resolvedSize} className={className} />
   );
 }

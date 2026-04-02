@@ -472,7 +472,7 @@ export default function VoiceProviderSetupModal({
             {providerType === "openai" && mode === "tts" && (
               <Vertical
                 title="Default Model"
-                subDescription="This model will be used by Onyx by default for text-to-speech."
+                subDescription="This model will be used by Colnitia GPT by default for text-to-speech."
                 nonInteractive
               >
                 <InputSelect value={ttsModel} onValueChange={setTtsModel}>

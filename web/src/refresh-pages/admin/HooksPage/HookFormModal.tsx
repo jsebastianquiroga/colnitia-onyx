@@ -73,7 +73,7 @@ function buildInitialState(
 }
 
 const SOFT_DESCRIPTION =
-  "If the endpoint returns an error, Onyx logs it and continues the pipeline as normal, ignoring the hook result.";
+  "If the endpoint returns an error, Colnitia GPT logs it and continues the pipeline as normal, ignoring the hook result.";
 
 const MAX_TIMEOUT_SECONDS = 600;
 
@@ -418,7 +418,7 @@ export default function HookFormModal({
             </FormField.Control>
             {!timeoutServerError && (
               <FormField.Description>
-                Maximum time Onyx will wait for the endpoint to respond before
+                Maximum time Colnitia GPT will wait for the endpoint to respond before
                 applying the fail strategy. Must be greater than 0 and at most{" "}
                 {MAX_TIMEOUT_SECONDS} seconds.
               </FormField.Description>
@@ -493,7 +493,7 @@ export default function HookFormModal({
             </FormField.Control>
             {!apiKeyFieldError && (
               <FormField.Description>
-                Onyx will use this key to authenticate with your API endpoint.
+                Colnitia GPT will use this key to authenticate with your API endpoint.
               </FormField.Description>
             )}
             <FormField.Message messages={{ error: apiKeyFieldError }} />

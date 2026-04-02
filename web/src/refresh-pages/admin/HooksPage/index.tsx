@@ -37,7 +37,7 @@ export default function HooksPage() {
       <SettingsLayouts.Header
         icon={route.icon}
         title={route.title}
-        description="Extend Onyx pipelines by registering external API endpoints as callbacks at predefined hook points."
+        description="Extend Colnitia GPT pipelines by registering external API endpoints as callbacks at predefined hook points."
         separator
       />
       <SettingsLayouts.Body>

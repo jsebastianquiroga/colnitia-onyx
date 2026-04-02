@@ -209,7 +209,7 @@ export default function RequestConnectorModal({
                       mainUiAction
                       className="text-text-light-05 dark:text-text-dark-05"
                     >
-                      Join Onyx Discord
+                      Join Colnitia GPT Discord
                     </Text>
                   </a>
                 </div>

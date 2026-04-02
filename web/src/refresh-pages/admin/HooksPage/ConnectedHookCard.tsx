@@ -64,7 +64,7 @@ function DisconnectConfirmModal({
         <Modal.Body>
           <div className="flex flex-col gap-4">
             <Text mainUiBody text03>
-              Onyx will stop calling this endpoint for hook{" "}
+              Colnitia GPT will stop calling this endpoint for hook{" "}
               <strong>
                 <em>{hook.name}</em>
               </strong>

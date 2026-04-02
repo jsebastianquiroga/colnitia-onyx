@@ -14,6 +14,7 @@ import IconButton from "@/refresh-components/buttons/IconButton";
 import { SvgCheckCircle, SvgEdit, SvgUser } from "@opal/icons";
 import { ContentAction } from "@opal/layouts";
 import { Hoverable } from "@opal/core";
+import { APP_NAME } from "@/lib/colnitia/brand";
 
 export interface NameStepProps {
   state: OnboardingState;
@@ -48,7 +49,7 @@ const NameStep = React.memo(
       >
         <ContentAction
           icon={SvgUser}
-          title="What should Onyx call you?"
+          title={`What should ${APP_NAME} call you?`}
           description="We will display this name in the app."
           sizePreset="main-ui"
           variant="section"

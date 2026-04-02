@@ -1,0 +1,27 @@
+/* Colnitia GPT brand colors */
+/* Primary: sky-blue #38BDF8 | Background: dark navy #0E1428 */
+
+:root {
+  /* Primary action (links, buttons, highlights) */
+  --action-link-05: #38BDF8;
+  --action-link-04: #0EA5E9;
+  --action-link-03: #0284C7;
+  --action-link-06: #7DD3FC;
+  --action-link-02: #BAE6FD;
+  --action-link-01: #E0F2FE;
+  --action-link-00: #F0F9FF;
+
+  /* Theme primary scale (used in accents, badges) */
+  --theme-primary-06: #38BDF8;
+  --theme-primary-05: #0EA5E9;
+  --theme-primary-04: #0284C7;
+}
+
+/* Dark mode overrides */
+.dark {
+  --background: #0E1428;
+  --background-neutral-00: #0E1428;
+  --background-neutral-01: #121A35;
+  --background-neutral-02: #1A2444;
+  --background-neutral-03: #1E2A50;
+}

@@ -1,0 +1,26 @@
+name: EE Directory Guard
+on:
+  pull_request:
+    paths:
+      - 'backend/ee/**'
+      - 'web/src/app/ee/**'
+      - 'web/src/ee/**'
+jobs:
+  check-ee:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fail if ee/ directories modified
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          # Check if this PR has the bypass label for legitimate upstream merges
+          LABELS=$(gh pr view "$PR_NUMBER" --json labels -q '.labels[].name')
+          if echo "$LABELS" | grep -q "ee-override"; then
+            echo "WARNING: ee-override label present. Skipping ee/ guard. Requires admin approval."
+            exit 0
+          fi
+          echo "ERROR: Changes to ee/ directories are not permitted in this fork."
+          echo "If this is a legitimate upstream merge, add the 'ee-override' label and re-run."
+          exit 1
