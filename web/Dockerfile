@@ -79,8 +79,8 @@ ENV SENTRY_RELEASE=${SENTRY_RELEASE}
 # Add NODE_OPTIONS argument
 ARG NODE_OPTIONS
 
-# Build the Next.js application
-RUN NODE_OPTIONS="${NODE_OPTIONS}" npx next build
+# Build the Next.js application (use webpack instead of Turbopack for compatibility)
+RUN NODE_OPTIONS="${NODE_OPTIONS}" npx next build --no-turbopack
 
 # Step 2. Production image, copy all the files and run next
 FROM base AS runner
