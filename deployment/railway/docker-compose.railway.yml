@@ -10,6 +10,12 @@ services:
       context: ../../backend
       dockerfile: Dockerfile.model_server
     restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
     environment:
       - MIN_THREADS_ML_MODELS=1
       - INDEXING_ONLY=false
@@ -28,6 +34,12 @@ services:
     restart: always
     depends_on:
       - model_server
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
     environment:
       # Auth
       - AUTH_TYPE=basic
@@ -58,6 +70,11 @@ services:
       # Deployment
       - WEB_DOMAIN=${WEB_DOMAIN}
       - LOG_LEVEL=info
+      # Sprint 5: Advanced Connectors
+      - GOOGLE_DRIVE_CLIENT_ID=${GOOGLE_DRIVE_CLIENT_ID}
+      - GOOGLE_DRIVE_CLIENT_SECRET=${GOOGLE_DRIVE_CLIENT_SECRET}
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
+      - SLACK_APP_TOKEN=${SLACK_APP_TOKEN}
 
   # ──────────────────────────────────────────────────
   # Next.js frontend
@@ -70,10 +87,18 @@ services:
     restart: always
     depends_on:
       - api_server
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 45s
     environment:
       - INTERNAL_URL=http://api_server:8080
       - PORT=3000
       - NODE_ENV=production
+      # Required for CSRF/cookie handling on custom domain
+      - WEB_DOMAIN=${WEB_DOMAIN}
 
   # ──────────────────────────────────────────────────
   # Celery workers (beat + all worker types via supervisord)
@@ -88,6 +113,13 @@ services:
     depends_on:
       - model_server
       - api_server
+    healthcheck:
+      # supervisord exposes an XML-RPC port on 9001
+      test: ["CMD", "supervisorctl", "-u", "dummy", "-p", "dummy", "status"]
+      interval: 60s
+      timeout: 15s
+      retries: 3
+      start_period: 90s
     environment:
       # Secrets
       - SECRET_KEY=${SECRET_KEY}
@@ -114,6 +146,11 @@ services:
       # File storage
       - FILE_STORE_BACKEND=local
       - LOG_LEVEL=info
+      # Sprint 5: Advanced Connectors
+      - GOOGLE_DRIVE_CLIENT_ID=${GOOGLE_DRIVE_CLIENT_ID}
+      - GOOGLE_DRIVE_CLIENT_SECRET=${GOOGLE_DRIVE_CLIENT_SECRET}
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
+      - SLACK_APP_TOKEN=${SLACK_APP_TOKEN}
 
   # ──────────────────────────────────────────────────
   # OpenSearch — single-node, memory-optimised for Railway
@@ -124,6 +161,12 @@ services:
   opensearch:
     image: opensearchproject/opensearch:3.4.0
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sk https://localhost:9200/_cluster/health -u admin:${OPENSEARCH_ADMIN_PASSWORD} | grep -q '\"status\"'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
     environment:
       - discovery.type=single-node
       - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_ADMIN_PASSWORD}

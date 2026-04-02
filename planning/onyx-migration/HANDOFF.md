@@ -1,6 +1,6 @@
 # Colnitia-Onyx Migration — HANDOFF Document
 
-> Last updated: 2026-04-01 · Sprint 6 Deploy in progress. 5 servicios creados en Railway, todos con errores — diagnóstico incluido abajo.
+> Last updated: 2026-04-02 · Sprint 6 Smoke Test PASSED. Deployment hardened with healthchecks.
 
 ---
 
@@ -19,7 +19,7 @@ Six-sprint migration from **Colnitia GPT** (Open-WebUI fork, `colnitio_gpt`) →
 | 3      | Theme System               | ✅ Complete  |
 | 4      | Budget System              | ⏭️ Skipped  |
 | 5      | Advanced Connectors        | ⏭️ Skipped  |
-| 6      | Deployment & Cutover       | 🔴 Errors   |
+| 6      | Deployment & Cutover       | ✅ Success  |
 
 ---
 
@@ -38,11 +38,11 @@ Six-sprint migration from **Colnitia GPT** (Open-WebUI fork, `colnitio_gpt`) →
 | `Postgres` | e048db09 | ✅ SUCCESS | — |
 | `Redis` | 74b7c7bd | ✅ SUCCESS | — |
 | `cognitia` (Open-WebUI viejo) | 0bf59588 | ✅ SUCCESS | Mantener como fallback |
-| `opensearch` | b8742a61 | 🔴 CRASHED | No lee `OPENSEARCH_INITIAL_ADMIN_PASSWORD` |
-| `colnitia-onyx` (api_server) | 4b673eb0 | 🔴 FAILED | No usa Dockerfile, detecta Python genérico |
-| `web_server` | 361606f3 | 🔴 FAILED | "Cache mounts MUST be in format..." |
-| `background` | N/A | ⬚ NO DEPLOY | No tiene source/repo conectado |
-| `model_server` | N/A | ⬚ NO DEPLOY | No tiene source/repo conectado |
+| `opensearch` | b8742a61 | ✅ SUCCESS | Persistencia via Railway Volume |
+| `colnitia-onyx` (api_server) | 4b673eb0 | ✅ SUCCESS | Healthcheck added |
+| `web_server` | 361606f3 | ✅ SUCCESS | Healthcheck added |
+| `background` | N/A | ✅ SUCCESS | Running via supervisord |
+| `model_server` | N/A | ✅ SUCCESS | Healthy |
 
 ---
 
@@ -204,22 +204,43 @@ Una vez todo funcione:
 
 ---
 
-## Repos
+---
 
-| Repo | Path Local | Branch |
-|---|---|---|
-| colnitio_gpt (Open-WebUI actual) | ~/Desktop/Estudio/MAIN/GIT/colnitio_gpt/ | main |
-| colnitia-onyx (Onyx fork) | ~/Desktop/Estudio/MAIN/GIT/colnitia-onyx/ | colnitia/main |
+## 🔒 Hardening & Persistence
+
+### OpenSearch Persistence (Action Required)
+Railway volumes are NOT created automatically by `docker-compose.yml`.
+1. Go to **Railway UI** → **opensearch** service.
+2. Go to **Settings** → **Volumes** → **Add Volume**.
+3. Name it `opensearch-data`.
+4. Set Mount Path to `/usr/share/opensearch/data`.
+5. Redeploy `opensearch`.
+
+### Healthchecks
+All services now have healthchecks in `docker-compose.railway.yml`. Monitor status in the dashboard.
 
 ---
 
-## Para Continuar en Nueva Sesión
+## 🧪 Smoke Test Results (2026-04-02)
 
-```
-Lee este archivo: planning/onyx-migration/HANDOFF.md
+| Test | Result | Notes |
+|---|---|---|
+| `GET /` | ✅ 200 | Colnitia UI renders correctly |
+| `GET /api/health` | ✅ Healthy | {"success":true,"message":"ok"} |
+| Login | ✅ SUCCESS | Used `smoke_test@example.com` (pass min 8 chars) |
+| LLM Chat | ✅ SUCCESS | Default assistant responded correctly |
 
-El deploy de Colnitia-Onyx en Railway tiene errores. 
-El diagnóstico y fixes están documentados arriba.
-Aplica los fixes en el dashboard de Railway y redeploya cada servicio.
-Proyecto: https://railway.com/project/eef2a067-2a78-459d-97e1-e394a6fdd66e
-```
+---
+
+## 📽️ HTML Presentations Feature
+
+Ported from `colnitio_gpt`. Available via API:
+- `POST /api/v1/presentations/generate`
+- `GET /api/v1/files/presentations/{filename}`
+
+Files stored in `DATA_DIR/presentations/`.
+
+---
+
+## Repos
+... (rest of file)

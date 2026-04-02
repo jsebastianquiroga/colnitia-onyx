@@ -419,6 +419,9 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+    budget: Mapped["Budget | None"] = relationship(
+        "Budget", back_populates="user", uselist=False, cascade="all, delete-orphan"
+    )
 
     @validates("email")
     def validate_email(self, key: str, value: str) -> str:  # noqa: ARG002
@@ -522,6 +525,29 @@ class PersonalAccessToken(Base):
             "ix_pat_user_created", user_id, created_at.desc()
         ),  # Fast user token listing
     )
+
+
+class Budget(Base):
+    __tablename__ = "budget"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("user.id", ondelete="CASCADE"),
+        unique=True,
+        nullable=False,
+    )
+    balance: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    total_spent: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+    user: Mapped["User"] = relationship("User", back_populates="budget")
 
 
 class Notification(Base):

@@ -68,6 +68,8 @@ class OnyxErrorCode(Enum):
     # ------------------------------------------------------------------
     RATE_LIMITED = ("RATE_LIMITED", 429)
     SEAT_LIMIT_EXCEEDED = ("SEAT_LIMIT_EXCEEDED", 402)
+    BUDGET_EXCEEDED = ("BUDGET_EXCEEDED", 402)
+    BUDGET_INACTIVE = ("BUDGET_INACTIVE", 402)
 
     # ------------------------------------------------------------------
     # Payload (413)

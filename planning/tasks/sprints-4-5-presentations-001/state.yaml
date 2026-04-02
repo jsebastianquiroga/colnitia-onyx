@@ -1,0 +1,21 @@
+WORKFLOW_STATE:
+  task_id: "sprints-4-5-presentations-001"
+  task: "Implement Budget System (Sprint 4), Advanced Connectors (Sprint 5), and HTML Presentations Tool for Onyx"
+  current_phase: 1
+  current_stage: "SPEC_WRITING"
+  iterations:
+    spec: 1
+    architect: 0
+    dev: 0
+    qa: 0
+  scores:
+    spec_validation: null
+    architect_score: null
+    impl_validation: null
+    qa_result: null
+  artifacts:
+    spec: "planning/tasks/sprints-4-5-presentations-001/spec.md"
+    code: []
+    tests: []
+    reports: []
+  documentation_synced: true

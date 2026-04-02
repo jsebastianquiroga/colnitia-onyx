@@ -7,6 +7,7 @@ from typing import Any
 from typing import cast
 from typing import TYPE_CHECKING
 from typing import Union
+from uuid import UUID
 
 from onyx.configs.app_configs import MOCK_LLM_RESPONSE
 from onyx.configs.chat_configs import LLM_SOCKET_READ_TIMEOUT
@@ -338,7 +339,9 @@ class LitellmLLM(LLM):
             dump["custom_config"] = masked_config
         return dump
 
-    def _track_llm_cost(self, usage: Usage) -> None:
+    def _track_llm_cost(
+        self, usage: Usage, user_identity: LLMUserIdentity | None = None
+    ) -> None:
         """
         Track LLM usage cost for Onyx-managed API keys.
 
@@ -379,6 +382,19 @@ class LitellmLLM(LLM):
         except Exception as e:
             # Log but don't fail the LLM call if tracking fails
             logger.warning(f"Failed to track LLM cost: {e}")
+
+        # Per-user budget deduction
+        if user_identity and user_identity.user_id:
+            from onyx.db.budget import deduct_from_budget
+
+            try:
+                user_id_uuid = UUID(user_identity.user_id)
+                with get_session_with_current_tenant() as db_session:
+                    # 1 credit = 1 cent for now (cost_cents is already accurate)
+                    deduct_from_budget(db_session, user_id_uuid, float(cost_cents))
+                    # Note: deduct_from_budget already commits
+            except Exception as e:
+                logger.warning(f"Failed to deduct from user budget: {e}")
 
     def _completion(
         self,
@@ -711,7 +727,7 @@ class LitellmLLM(LLM):
 
             # Track LLM cost for Onyx-managed API keys
             if model_response.usage:
-                self._track_llm_cost(model_response.usage)
+                self._track_llm_cost(model_response.usage, user_identity)
 
             return model_response
         finally:
@@ -790,7 +806,7 @@ class LitellmLLM(LLM):
 
                 # Track LLM cost when usage info is available (typically in the last chunk)
                 if model_response.usage:
-                    self._track_llm_cost(model_response.usage)
+                    self._track_llm_cost(model_response.usage, user_identity)
 
                 yield model_response
         finally:

@@ -88,6 +88,7 @@ from onyx.server.query_and_chat.session_loading import (
 )
 from onyx.server.query_and_chat.streaming_models import Packet
 from onyx.server.query_and_chat.token_limit import check_token_rate_limits
+from onyx.server.query_and_chat.budget_limit import check_budget_limits
 from onyx.server.usage_limits import check_llm_cost_limit_for_provider
 from onyx.server.usage_limits import check_usage_and_raise
 from onyx.server.usage_limits import is_usage_limits_enabled
@@ -540,6 +541,7 @@ def handle_send_chat_message(
     request: Request,
     user: User = Depends(current_chat_accessible_user),
     _rate_limit_check: None = Depends(check_token_rate_limits),
+    _budget_check: None = Depends(check_budget_limits),
     _api_key_usage_check: None = Depends(check_api_key_usage),
 ) -> StreamingResponse | ChatFullResponse:
     """
