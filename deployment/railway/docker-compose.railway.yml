@@ -1,6 +1,23 @@
 name: colnitia-onyx-railway
 
 services:
+  # ──────────────────────────────────────────────────
+  # Embedding / inference model server (required for RAG)
+  # Listens on port 9000
+  # ──────────────────────────────────────────────────
+  model_server:
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile.model_server
+    restart: always
+    environment:
+      - MIN_THREADS_ML_MODELS=1
+      - INDEXING_ONLY=false
+
+  # ──────────────────────────────────────────────────
+  # FastAPI backend
+  # Runs migrations on startup, then serves on 8080
+  # ──────────────────────────────────────────────────
   api_server:
     build:
       context: ../../backend
@@ -9,25 +26,43 @@ services:
       /bin/sh -c "alembic upgrade head &&
       uvicorn onyx.main:app --host 0.0.0.0 --port 8080"
     restart: always
+    depends_on:
+      - model_server
     environment:
+      # Auth
       - AUTH_TYPE=basic
-      - FILE_STORE_BACKEND=s3
+      # Secrets (injected via Railway env vars)
+      - SECRET_KEY=${SECRET_KEY}
+      - ENCRYPTION_KEY_SECRET=${ENCRYPTION_KEY_SECRET}
+      # Postgres (Railway plugin variables)
       - POSTGRES_HOST=${PGHOST}
       - POSTGRES_PORT=${PGPORT}
       - POSTGRES_DB=${PGDATABASE}
       - POSTGRES_USER=${PGUSER}
       - POSTGRES_PASSWORD=${PGPASSWORD}
-      - OPENSEARCH_HOST=${OPENSEARCH_HOST}
-      - OPENSEARCH_ADMIN_PASSWORD=${OPENSEARCH_ADMIN_PASSWORD}
-      - ENABLE_OPENSEARCH_INDEXING_FOR_ONYX=true
-      - ENABLE_OPENSEARCH_RETRIEVAL_FOR_ONYX=true
+      # Redis (Railway plugin variables)
       - REDIS_HOST=${REDISHOST}
       - REDIS_PORT=${REDISPORT}
       - REDIS_PASSWORD=${REDISPASSWORD}
-      - S3_ENDPOINT_URL=${S3_ENDPOINT_URL}
-      - S3_AWS_ACCESS_KEY_ID=${S3_AWS_ACCESS_KEY_ID}
-      - S3_AWS_SECRET_ACCESS_KEY=${S3_AWS_SECRET_ACCESS_KEY}
+      # OpenSearch
+      - OPENSEARCH_HOST=opensearch
+      - OPENSEARCH_PORT=9200
+      - OPENSEARCH_ADMIN_PASSWORD=${OPENSEARCH_ADMIN_PASSWORD}
+      - ENABLE_OPENSEARCH_INDEXING_FOR_ONYX=true
+      - ENABLE_OPENSEARCH_RETRIEVAL_FOR_ONYX=true
+      # Model server
+      - MODEL_SERVER_HOST=http://model_server
+      - MODEL_SERVER_PORT=9000
+      # File storage (local for initial deploy — swap to s3 when bucket is ready)
+      - FILE_STORE_BACKEND=local
+      # Deployment
+      - WEB_DOMAIN=${WEB_DOMAIN}
+      - LOG_LEVEL=info
 
+  # ──────────────────────────────────────────────────
+  # Next.js frontend
+  # Railway exposes PORT automatically — we pass it here
+  # ──────────────────────────────────────────────────
   web_server:
     build:
       context: ../../web
@@ -37,7 +72,12 @@ services:
       - api_server
     environment:
       - INTERNAL_URL=http://api_server:8080
+      - PORT=3000
+      - NODE_ENV=production
 
+  # ──────────────────────────────────────────────────
+  # Celery workers (beat + all worker types via supervisord)
+  # ──────────────────────────────────────────────────
   background:
     build:
       context: ../../backend
@@ -45,24 +85,42 @@ services:
     command: >
       /bin/sh -c "/app/scripts/supervisord_entrypoint.sh"
     restart: always
+    depends_on:
+      - model_server
+      - api_server
     environment:
-      - FILE_STORE_BACKEND=s3
+      # Secrets
+      - SECRET_KEY=${SECRET_KEY}
+      - ENCRYPTION_KEY_SECRET=${ENCRYPTION_KEY_SECRET}
+      # Postgres
       - POSTGRES_HOST=${PGHOST}
       - POSTGRES_PORT=${PGPORT}
       - POSTGRES_DB=${PGDATABASE}
       - POSTGRES_USER=${PGUSER}
       - POSTGRES_PASSWORD=${PGPASSWORD}
-      - OPENSEARCH_HOST=${OPENSEARCH_HOST}
-      - OPENSEARCH_ADMIN_PASSWORD=${OPENSEARCH_ADMIN_PASSWORD}
-      - ENABLE_OPENSEARCH_INDEXING_FOR_ONYX=true
-      - ENABLE_OPENSEARCH_RETRIEVAL_FOR_ONYX=true
+      # Redis
       - REDIS_HOST=${REDISHOST}
       - REDIS_PORT=${REDISPORT}
       - REDIS_PASSWORD=${REDISPASSWORD}
-      - S3_ENDPOINT_URL=${S3_ENDPOINT_URL}
-      - S3_AWS_ACCESS_KEY_ID=${S3_AWS_ACCESS_KEY_ID}
-      - S3_AWS_SECRET_ACCESS_KEY=${S3_AWS_SECRET_ACCESS_KEY}
-    
+      # OpenSearch
+      - OPENSEARCH_HOST=opensearch
+      - OPENSEARCH_PORT=9200
+      - OPENSEARCH_ADMIN_PASSWORD=${OPENSEARCH_ADMIN_PASSWORD}
+      - ENABLE_OPENSEARCH_INDEXING_FOR_ONYX=true
+      - ENABLE_OPENSEARCH_RETRIEVAL_FOR_ONYX=true
+      # Model server
+      - MODEL_SERVER_HOST=http://model_server
+      - MODEL_SERVER_PORT=9000
+      # File storage
+      - FILE_STORE_BACKEND=local
+      - LOG_LEVEL=info
+
+  # ──────────────────────────────────────────────────
+  # OpenSearch — single-node, memory-optimised for Railway
+  # NOTE: Uses a Railway Volume mounted at /data for persistence.
+  # Create a Railway Volume named "opensearch-data" and bind it to
+  # this service at /usr/share/opensearch/data in the Railway UI.
+  # ──────────────────────────────────────────────────
   opensearch:
     image: opensearchproject/opensearch:3.4.0
     restart: always
@@ -70,7 +128,10 @@ services:
       - discovery.type=single-node
       - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_ADMIN_PASSWORD}
       - bootstrap.memory_lock=true
-      - "OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g"  # Lowered lock memory for Railway to 1GB
+      # 1 GB heap — fits Railway's $20/mo plan (2 GB RAM)
+      - "OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g"
+      # Data path — bind Railway Volume here
+      - path.data=/usr/share/opensearch/data
     ulimits:
       memlock:
         soft: -1
@@ -78,8 +139,13 @@ services:
       nofile:
         soft: 65536
         hard: 65536
+    # ❗ Named volumes are NOT supported in Railway's Docker Compose mode.
+    # Instead, use Railway's Volume plugin and mount it to:
+    #   /usr/share/opensearch/data
+    # via the Railway UI → Service Settings → Volumes.
     volumes:
       - opensearch-data:/usr/share/opensearch/data
 
+# Kept for local development only — Railway ignores this and uses its Volume plugin.
 volumes:
   opensearch-data:
