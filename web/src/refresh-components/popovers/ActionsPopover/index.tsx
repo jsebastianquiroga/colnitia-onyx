@@ -3,6 +3,7 @@
 import {
   FILE_READER_TOOL_ID,
   IMAGE_GENERATION_TOOL_ID,
+  PRESENTATIONS_TOOL_ID,
   PYTHON_TOOL_ID,
   SEARCH_TOOL_ID,
   WEB_SEARCH_TOOL_ID,
@@ -68,6 +69,7 @@ const TOOL_DESCRIPTIONS: Record<string, string> = {
   [IMAGE_GENERATION_TOOL_ID]: "Generate images based on a prompt.",
   [WEB_SEARCH_TOOL_ID]: "Search the web for up-to-date information.",
   [PYTHON_TOOL_ID]: "Execute code for complex analysis.",
+  [PRESENTATIONS_TOOL_ID]: "Generate professional presentations with slides.",
 };
 
 const DEFAULT_TOOL_DESCRIPTION = "This action is not configured yet.";

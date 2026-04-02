@@ -22,6 +22,9 @@ from onyx.server.query_and_chat.streaming_models import CustomToolErrorInfo
 from onyx.server.query_and_chat.streaming_models import GeneratedImage
 from onyx.tools.tool_implementations.images.models import FinalImageGenerationResponse
 from onyx.tools.tool_implementations.memory.models import MemoryToolResponse
+from onyx.tools.tool_implementations.presentations.models import (
+    FinalPresentationResponse,
+)
 
 
 TOOL_CALL_MSG_FUNC_NAME = "function_name"
@@ -95,6 +98,8 @@ class ToolResponse(BaseModel):
         # | WebContentResponse
         # This comes from custom tools, tool result needs to be saved
         | CustomToolCallSummary
+        # This comes from the presentations tool
+        | FinalPresentationResponse
         # This comes from code interpreter, carries generated files
         | PythonToolRichResponse
         # If the rich response is a string, this is what's saved to the tool call in the DB

@@ -26,6 +26,8 @@ export enum PacketType {
   FETCH_TOOL_START = "open_url_start",
   FETCH_TOOL_URLS = "open_url_urls",
   FETCH_TOOL_DOCUMENTS = "open_url_documents",
+  PRESENTATION_TOOL_START = "presentation_start",
+  PRESENTATION_TOOL_FINAL = "presentation_final",
 
   // Tool call argument delta (streams tool args before tool executes)
   TOOL_CALL_ARGUMENT_DELTA = "tool_call_argument_delta",
@@ -207,6 +209,19 @@ export interface CustomToolDelta extends BaseObj {
   error?: CustomToolErrorInfo | null;
 }
 
+// Presentation Tool Packets
+export interface PresentationToolStart extends BaseObj {
+  type: "presentation_start";
+}
+
+export interface PresentationToolFinal extends BaseObj {
+  type: "presentation_final";
+  view_url: string;
+  download_url: string | null;
+  filename: string;
+  slides_count: number;
+}
+
 // File Reader Packets
 export interface FileReaderStart extends BaseObj {
   type: "file_reader_start";
@@ -344,6 +359,11 @@ export type FileReaderToolObj =
   | FileReaderResult
   | SectionEnd
   | PacketError;
+export type PresentationToolObj =
+  | PresentationToolStart
+  | PresentationToolFinal
+  | SectionEnd
+  | PacketError;
 export type MemoryToolObj =
   | MemoryToolStart
   | MemoryToolDelta
@@ -357,7 +377,8 @@ export type NewToolObj =
   | FetchToolObj
   | CustomToolObj
   | FileReaderToolObj
-  | MemoryToolObj;
+  | MemoryToolObj
+  | PresentationToolObj;
 
 export type ReasoningObj =
   | ReasoningStart
@@ -456,6 +477,11 @@ export interface FileReaderToolPacket {
   placement: Placement;
   obj: FileReaderToolObj;
 }
+export interface PresentationToolPacket {
+  placement: Placement;
+  obj: PresentationToolObj;
+}
+
 export interface MemoryToolPacket {
   placement: Placement;
   obj: MemoryToolObj;

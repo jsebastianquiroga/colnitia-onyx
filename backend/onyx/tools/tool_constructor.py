@@ -38,6 +38,9 @@ from onyx.tools.tool_implementations.images.image_generation_tool import (
 )
 from onyx.tools.tool_implementations.mcp.mcp_tool import MCPTool
 from onyx.tools.tool_implementations.memory.memory_tool import MemoryTool
+from onyx.tools.tool_implementations.presentations.presentations_tool import (
+    PresentationsTool,
+)
 from onyx.tools.tool_implementations.open_url.open_url_tool import (
     OpenURLTool,
 )
@@ -277,6 +280,15 @@ def construct_tools(
                         emitter=emitter,
                         user_file_ids=cfg.user_file_ids,
                         chat_file_ids=cfg.chat_file_ids,
+                    )
+                ]
+
+            # Handle Presentations Tool
+            elif tool_cls.__name__ == PresentationsTool.__name__:
+                tool_dict[db_tool_model.id] = [
+                    PresentationsTool(
+                        tool_id=db_tool_model.id,
+                        emitter=emitter,
                     )
                 ]
 

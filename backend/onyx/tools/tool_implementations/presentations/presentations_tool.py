@@ -1,12 +1,23 @@
+import json
 from typing import Any
+
 from typing_extensions import override
 
 from onyx.chat.emitter import Emitter
 from onyx.configs.app_configs import WEB_DOMAIN
 from onyx.server.features.presentations.generator import generate_presentation_html
+from onyx.server.features.presentations.generator import save_presentation
 from onyx.server.query_and_chat.placement import Placement
+from onyx.server.query_and_chat.streaming_models import Packet
+from onyx.server.query_and_chat.streaming_models import PresentationToolFinal
+from onyx.server.query_and_chat.streaming_models import PresentationToolStart
 from onyx.tools.interface import Tool
+from onyx.tools.models import ToolCallException
+from onyx.tools.models import ToolExecutionException
 from onyx.tools.models import ToolResponse
+from onyx.tools.tool_implementations.presentations.models import (
+    FinalPresentationResponse,
+)
 
 
 class PresentationsTool(Tool[None]):
@@ -58,39 +69,90 @@ class PresentationsTool(Tool[None]):
                         },
                         "slides": {
                             "type": "array",
-                            "description": "List of slide objects",
+                            "description": "List of slide objects. Each slide has a 'type' that determines which fields are used.",
                             "items": {
                                 "type": "object",
                                 "properties": {
+                                    "type": {
+                                        "type": "string",
+                                        "enum": [
+                                            "title",
+                                            "content",
+                                            "stats",
+                                            "quote",
+                                            "section",
+                                            "two_column",
+                                            "closing",
+                                        ],
+                                        "description": "Slide layout type",
+                                    },
                                     "title": {
                                         "type": "string",
-                                        "description": "Slide title",
+                                        "description": "Slide title (used by: title, content, stats, section, two_column, closing)",
                                     },
-                                    "content": {
+                                    "subtitle": {
                                         "type": "string",
-                                        "description": "Markdown content for the slide body",
+                                        "description": "Subtitle text (used by: title, section, closing)",
+                                    },
+                                    "bullets": {
+                                        "type": "array",
+                                        "items": {"type": "string"},
+                                        "description": "Bullet points (used by: content)",
+                                    },
+                                    "stats": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "value": {"type": "string"},
+                                                "label": {"type": "string"},
+                                            },
+                                        },
+                                        "description": "Stat cards (used by: stats, max 4)",
+                                    },
+                                    "quote": {
+                                        "type": "string",
+                                        "description": "Quote text (used by: quote)",
+                                    },
+                                    "author": {
+                                        "type": "string",
+                                        "description": "Quote author (used by: quote)",
+                                    },
+                                    "role": {
+                                        "type": "string",
+                                        "description": "Author role/title (used by: quote)",
+                                    },
+                                    "left_items": {
+                                        "type": "array",
+                                        "items": {"type": "string"},
+                                        "description": "Left column items (used by: two_column)",
+                                    },
+                                    "right_items": {
+                                        "type": "array",
+                                        "items": {"type": "string"},
+                                        "description": "Right column items (used by: two_column)",
+                                    },
+                                    "left_title": {
+                                        "type": "string",
+                                        "description": "Left column heading (used by: two_column)",
+                                    },
+                                    "right_title": {
+                                        "type": "string",
+                                        "description": "Right column heading (used by: two_column)",
+                                    },
+                                    "contact": {
+                                        "type": "string",
+                                        "description": "Contact info (used by: closing)",
                                     },
                                 },
-                                "required": ["title", "content"],
+                                "required": ["type"],
                             },
                         },
                         "theme": {
                             "type": "string",
-                            "description": "Reveal.js theme",
-                            "enum": [
-                                "black",
-                                "white",
-                                "league",
-                                "beige",
-                                "sky",
-                                "night",
-                                "serif",
-                                "simple",
-                                "solarized",
-                                "blood",
-                                "moon",
-                            ],
-                            "default": "night",
+                            "description": "Visual theme for the presentation",
+                            "enum": ["dark", "light", "corporate"],
+                            "default": "dark",
                         },
                     },
                     "required": ["title", "slides"],
@@ -100,7 +162,12 @@ class PresentationsTool(Tool[None]):
 
     @override
     def emit_start(self, placement: Placement) -> None:
-        pass
+        self.emitter.emit(
+            Packet(
+                placement=placement,
+                obj=PresentationToolStart(),
+            )
+        )
 
     @override
     def run(
@@ -109,18 +176,71 @@ class PresentationsTool(Tool[None]):
         override_kwargs: None,
         **llm_kwargs: Any,
     ) -> ToolResponse:
-        title = llm_kwargs.get("title", "Untitled Presentation")
-        slides = llm_kwargs.get("slides", [])
-        theme = llm_kwargs.get("theme", "night")
+        title = llm_kwargs.get("title")
+        if not title:
+            raise ToolCallException(
+                message="Missing required 'title' parameter",
+                llm_facing_message="The generate_presentation tool requires a 'title' parameter.",
+            )
 
-        # Call the generator logic ported from colnitio_gpt
-        filename = generate_presentation_html(title, slides, theme)
-        
-        # Build the viewing URL using the WEB_DOMAIN config
-        base_url = WEB_DOMAIN.rstrip("/")
-        view_url = f"{base_url}/api/v1/files/presentations/{filename}"
+        slides = llm_kwargs.get("slides", [])
+        if not slides:
+            raise ToolCallException(
+                message="Missing or empty 'slides' parameter",
+                llm_facing_message="The generate_presentation tool requires at least one slide.",
+            )
+
+        theme = llm_kwargs.get("theme", "dark")
+
+        try:
+            html = generate_presentation_html(title, slides, theme)
+            filename = save_presentation(title, html)
+        except Exception as e:
+            raise ToolExecutionException(
+                f"Failed to generate presentation: {e}",
+                emit_error_packet=True,
+            )
+
+        # Build URL - backend serves at /files/presentations/{filename}
+        # Next.js proxy adds /api/ prefix for frontend access
+        base_url = WEB_DOMAIN.rstrip("/") if WEB_DOMAIN else ""
+        view_url = f"{base_url}/api/files/presentations/{filename}"
+
+        # PPTX generation is deferred - set download_url to None
+        download_url: str | None = None
+
+        final_response = FinalPresentationResponse(
+            view_url=view_url,
+            download_url=download_url,
+            filename=filename,
+            slides_count=len(slides),
+            slides_data=slides,
+        )
+
+        # Emit final packet for frontend artifact rendering
+        self.emitter.emit(
+            Packet(
+                placement=placement,
+                obj=PresentationToolFinal(
+                    view_url=view_url,
+                    download_url=download_url,
+                    filename=filename,
+                    slides_count=len(slides),
+                ),
+            )
+        )
+
+        # LLM-facing response includes slides_data so LLM can reference/modify in follow-up turns
+        llm_response = json.dumps(
+            {
+                "view_url": view_url,
+                "download_url": download_url,
+                "slides_count": len(slides),
+                "slides_data": slides,
+            }
+        )
 
         return ToolResponse(
-            rich_response={"view_url": view_url, "filename": filename},
-            llm_facing_response=f"Presentation generated successfully. User can view it at: {view_url}",
+            rich_response=final_response,
+            llm_facing_response=llm_response,
         )

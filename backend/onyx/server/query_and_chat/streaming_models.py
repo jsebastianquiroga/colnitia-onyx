@@ -30,6 +30,8 @@ class StreamingType(Enum):
     IMAGE_GENERATION_START = "image_generation_start"
     IMAGE_GENERATION_HEARTBEAT = "image_generation_heartbeat"
     IMAGE_GENERATION_FINAL = "image_generation_final"
+    PRESENTATION_START = "presentation_start"
+    PRESENTATION_FINAL = "presentation_final"
     PYTHON_TOOL_START = "python_tool_start"
     PYTHON_TOOL_DELTA = "python_tool_delta"
     CUSTOM_TOOL_START = "custom_tool_start"
@@ -229,6 +231,21 @@ class ImageGenerationFinal(BaseObj):
     images: list[GeneratedImage]
 
 
+# Presentation tool starting
+class PresentationToolStart(BaseObj):
+    type: Literal["presentation_start"] = StreamingType.PRESENTATION_START.value
+
+
+# The final presentation result
+class PresentationToolFinal(BaseObj):
+    type: Literal["presentation_final"] = StreamingType.PRESENTATION_FINAL.value
+
+    view_url: str
+    download_url: str | None
+    filename: str
+    slides_count: int
+
+
 class PythonToolStart(BaseObj):
     type: Literal["python_tool_start"] = StreamingType.PYTHON_TOOL_START.value
     code: str
@@ -387,6 +404,8 @@ PacketObj = Union[
     ImageGenerationToolStart,
     ImageGenerationToolHeartbeat,
     ImageGenerationFinal,
+    PresentationToolStart,
+    PresentationToolFinal,
     OpenUrlStart,
     OpenUrlUrls,
     OpenUrlDocuments,

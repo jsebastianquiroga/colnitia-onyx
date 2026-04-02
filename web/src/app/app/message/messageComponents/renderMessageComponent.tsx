@@ -22,6 +22,7 @@ import { ImageToolRenderer } from "./renderers/ImageToolRenderer";
 import { PythonToolRenderer } from "./timeline/renderers/code/PythonToolRenderer";
 import { ReasoningRenderer } from "./timeline/renderers/reasoning/ReasoningRenderer";
 import CustomToolRenderer from "./renderers/CustomToolRenderer";
+import { PresentationToolRenderer } from "./renderers/PresentationToolRenderer";
 import { FileReaderToolRenderer } from "./timeline/renderers/filereader/FileReaderToolRenderer";
 import { FetchToolRenderer } from "./timeline/renderers/fetch/FetchToolRenderer";
 import { MemoryToolRenderer } from "./timeline/renderers/memory/MemoryToolRenderer";
@@ -64,6 +65,10 @@ function isPythonToolPacket(packet: Packet) {
       (packet.obj as ToolCallArgumentDelta).tool_type ===
         CODE_INTERPRETER_TOOL_TYPES.PYTHON)
   );
+}
+
+function isPresentationToolPacket(packet: Packet) {
+  return packet.obj.type === PacketType.PRESENTATION_TOOL_START;
 }
 
 function isCustomToolPacket(packet: Packet) {
@@ -145,6 +150,9 @@ export function findRenderer(
   }
   if (groupedPackets.packets.some((packet) => isFileReaderToolPacket(packet))) {
     return FileReaderToolRenderer;
+  }
+  if (groupedPackets.packets.some((packet) => isPresentationToolPacket(packet))) {
+    return PresentationToolRenderer;
   }
   if (groupedPackets.packets.some((packet) => isCustomToolPacket(packet))) {
     return CustomToolRenderer;
