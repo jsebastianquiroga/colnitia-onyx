@@ -597,6 +597,13 @@ class LitellmLLM(LLM):
                 if tools and tool_choice is not None:
                     optional_kwargs["tool_choice"] = tool_choice
 
+                logger.info(
+                    f"[LLM_DEBUG] litellm.completion call: model={model}, "
+                    f"tools_count={len(tools) if tools else 0}, "
+                    f"tool_choice={optional_kwargs.get('tool_choice', 'NOT_SET')}, "
+                    f"custom_llm_provider={self._custom_llm_provider}, "
+                    f"allowed_openai_params={optional_kwargs.get('allowed_openai_params', 'NOT_SET')}"
+                )
                 response = litellm.completion(
                     mock_response=get_llm_mock_response() or MOCK_LLM_RESPONSE,
                     model=model,
