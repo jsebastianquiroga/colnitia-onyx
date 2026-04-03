@@ -83,7 +83,7 @@ ARG NODE_OPTIONS
 ENV INTERNAL_URL=http://apiserver.railway.internal:8080
 
 # Build the Next.js application
-RUN NODE_OPTIONS="${NODE_OPTIONS}" npx next build --no-turbopack
+RUN NODE_OPTIONS="${NODE_OPTIONS}" npx next build
 
 # Step 2. Production image, copy all the files and run next
 FROM base AS runner
