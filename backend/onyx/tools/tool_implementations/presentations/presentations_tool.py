@@ -1,7 +1,10 @@
 import json
+import logging
 from typing import Any
 
 from typing_extensions import override
+
+logger = logging.getLogger(__name__)
 
 from onyx.chat.emitter import Emitter
 from onyx.configs.app_configs import WEB_DOMAIN
@@ -176,6 +179,7 @@ class PresentationsTool(Tool[None]):
         override_kwargs: None,
         **llm_kwargs: Any,
     ) -> ToolResponse:
+        logger.info(f"[PRES_DEBUG] PresentationsTool.run() called with kwargs: {list(llm_kwargs.keys())}")
         title = llm_kwargs.get("title")
         if not title:
             raise ToolCallException(
