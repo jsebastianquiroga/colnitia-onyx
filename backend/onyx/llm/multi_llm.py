@@ -444,9 +444,13 @@ class LitellmLLM(LLM):
 
         # Model name
         is_bifrost = self._model_provider == LlmProviderNames.BIFROST
+        # NOTE(colnitia): Disabled Responses API bridge because LiteLLM 1.81.6
+        # does not pass tool_choice correctly through the responses/ path,
+        # causing all tool calls to be silently ignored.
+        use_responses_api = False
         model_provider = (
             f"{self.config.model_provider}/responses"
-            if is_openai_model  # Uses litellm's completions -> responses bridge
+            if is_openai_model and use_responses_api
             else self.config.model_provider
         )
         if is_bifrost:
@@ -607,6 +611,7 @@ class LitellmLLM(LLM):
                     f"custom_llm_provider={self._custom_llm_provider}, "
                     f"allowed_openai_params={optional_kwargs.get('allowed_openai_params', 'NOT_SET')}"
                 )
+
                 response = litellm.completion(
                     mock_response=get_llm_mock_response() or MOCK_LLM_RESPONSE,
                     model=model,
@@ -699,7 +704,7 @@ class LitellmLLM(LLM):
         # and not every model path was traced thoroughly. It is also possible that in future versions of LiteLLM
         # they will realize that their OpenAI handling is not threadsafe. Hope they will just fix it.
         client = None
-        if is_true_openai_model(self.config.model_provider, self.config.model_name):
+        if is_true_openai_model(self.config.model_provider, self.config.model_name) and use_responses_api:
             client = HTTPHandler(timeout=timeout_override or self._timeout)
 
         try:
@@ -790,7 +795,7 @@ class LitellmLLM(LLM):
         #    - Shared pools can have connections corrupted by other threads
         #    - Per-request HTTPHandler eliminates cross-thread interference
         client = None
-        if is_true_openai_model(self.config.model_provider, self.config.model_name):
+        if is_true_openai_model(self.config.model_provider, self.config.model_name) and use_responses_api:
             client = HTTPHandler(timeout=timeout_override or self._timeout)
 
         try:
