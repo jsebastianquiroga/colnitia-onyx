@@ -8,7 +8,6 @@ import {
 } from "../../../services/streamingModels";
 import { MessageRenderer, RenderType } from "../interfaces";
 import { Text } from "@opal/components";
-import { Button } from "@opal/components";
 
 function constructPresentationState(packets: PresentationToolPacket[]) {
   const hasStart = packets.some(
@@ -102,24 +101,24 @@ export const PresentationToolRenderer: MessageRenderer<
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <Button
-                  variant="action"
-                  prominence="primary"
-                  size="sm"
+                <a
                   href={finalData.view_url}
-                  icon={SvgFileChartPie}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-md bg-action-link-01 px-3 py-1.5 text-text-inverted-01 text-sm font-medium hover:opacity-90 transition-opacity"
                 >
+                  <SvgFileChartPie className="w-4 h-4" />
                   View Presentation
-                </Button>
+                </a>
                 {finalData.download_url && (
-                  <Button
-                    variant="default"
-                    prominence="secondary"
-                    size="sm"
+                  <a
                     href={finalData.download_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-border-02 bg-background-neutral-01 px-3 py-1.5 text-text-01 text-sm font-medium hover:bg-background-neutral-02 transition-colors"
                   >
                     Download
-                  </Button>
+                  </a>
                 )}
               </div>
             </div>
