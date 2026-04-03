@@ -444,11 +444,7 @@ class LitellmLLM(LLM):
 
         # Model name
         is_bifrost = self._model_provider == LlmProviderNames.BIFROST
-        model_provider = (
-            f"{self.config.model_provider}/responses"
-            if is_openai_model  # Uses litellm's completions -> responses bridge
-            else self.config.model_provider
-        )
+        model_provider = self.config.model_provider
         if is_bifrost:
             # Bifrost expects model names in provider/model format
             # (e.g. "anthropic/claude-sonnet-4-6") sent directly to its
