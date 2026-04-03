@@ -1142,7 +1142,9 @@ def run_llm_step_pkt_generator(
         logger.info(
             f"[TOOL_DEBUG] Sending {len(tool_definitions)} tools to LLM. "
             f"tool_choice={tool_choice}, "
-            f"tool_names={[t.get('function', {}).get('name') for t in tool_definitions]}"
+            f"tool_names={[t.get('function', {}).get('name') for t in tool_definitions]}, "
+            f"model={llm.config.model_name}, provider={llm.config.model_provider}, "
+            f"api_base={llm.config.api_base}"
         )
         for packet in llm.stream(
             prompt=llm_msg_history,
