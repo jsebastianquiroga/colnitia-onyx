@@ -444,7 +444,11 @@ class LitellmLLM(LLM):
 
         # Model name
         is_bifrost = self._model_provider == LlmProviderNames.BIFROST
-        model_provider = self.config.model_provider
+        model_provider = (
+            f"{self.config.model_provider}/responses"
+            if is_openai_model  # Uses litellm's completions -> responses bridge
+            else self.config.model_provider
+        )
         if is_bifrost:
             # Bifrost expects model names in provider/model format
             # (e.g. "anthropic/claude-sonnet-4-6") sent directly to its
@@ -591,7 +595,10 @@ class LitellmLLM(LLM):
                 # Only pass tool_choice when tools are present — some providers (e.g. Fireworks)
                 # reject requests where tool_choice is explicitly null.
                 if tools and tool_choice is not None:
-                    optional_kwargs["tool_choice"] = tool_choice
+                    # Convert enum to string value for LiteLLM compatibility
+                    # with both Chat Completions and Responses API
+                    tc_value = tool_choice.value if hasattr(tool_choice, 'value') else tool_choice
+                    optional_kwargs["tool_choice"] = tc_value
 
                 logger.info(
                     f"[LLM_DEBUG] litellm.completion call: model={model}, "
