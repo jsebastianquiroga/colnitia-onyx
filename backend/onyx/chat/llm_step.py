@@ -1139,6 +1139,11 @@ def run_llm_step_pkt_generator(
                     obj=AgentResponseDelta(content=content_chunk),
                 )
 
+        logger.info(
+            f"[TOOL_DEBUG] Sending {len(tool_definitions)} tools to LLM. "
+            f"tool_choice={tool_choice}, "
+            f"tool_names={[t.get('function', {}).get('name') for t in tool_definitions]}"
+        )
         for packet in llm.stream(
             prompt=llm_msg_history,
             tools=tool_definitions,
