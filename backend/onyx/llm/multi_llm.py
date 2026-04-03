@@ -704,8 +704,6 @@ class LitellmLLM(LLM):
         # and not every model path was traced thoroughly. It is also possible that in future versions of LiteLLM
         # they will realize that their OpenAI handling is not threadsafe. Hope they will just fix it.
         client = None
-        if is_true_openai_model(self.config.model_provider, self.config.model_name) and use_responses_api:
-            client = HTTPHandler(timeout=timeout_override or self._timeout)
 
         try:
             # When custom_config is set, env vars are temporarily injected
@@ -795,8 +793,6 @@ class LitellmLLM(LLM):
         #    - Shared pools can have connections corrupted by other threads
         #    - Per-request HTTPHandler eliminates cross-thread interference
         client = None
-        if is_true_openai_model(self.config.model_provider, self.config.model_name) and use_responses_api:
-            client = HTTPHandler(timeout=timeout_override or self._timeout)
 
         try:
             response = cast(
