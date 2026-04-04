@@ -189,6 +189,10 @@ def _safe_run_single_tool(
 
     with function_span(tool.name) as span_fn:
         span_fn.span_data.input = str(tool_call.tool_args)
+        logger.info(
+            f"[TOOL_EXEC] Executing tool '{tool.name}' (class={type(tool).__name__}) "
+            f"with args keys: {list(tool_call.tool_args.keys())}"
+        )
         try:
             tool_response = tool.run(
                 placement=tool_call.placement,
@@ -350,6 +354,11 @@ def run_tool_calls(
         )
 
     tools_by_name = {tool.name: tool for tool in tools}
+    logger.info(
+        f"[TOOL_DISPATCH] run_tool_calls: {len(merged_tool_calls)} calls, "
+        f"available tools: {list(tools_by_name.keys())}, "
+        f"requested tools: {[tc.tool_name for tc in merged_tool_calls]}"
+    )
 
     # Drop unknown tools (and don't let them count against the cap)
     filtered_tool_calls: list[ToolCallKickoff] = []

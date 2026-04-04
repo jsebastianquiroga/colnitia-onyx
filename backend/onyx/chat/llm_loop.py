@@ -887,6 +887,11 @@ def run_llm_loop(
             # each tool might have custom logic here
             tool_responses: list[ToolResponse] = []
             tool_calls = llm_step_result.tool_calls or []
+            logger.info(
+                f"[LOOP_DEBUG] LLM step done. tool_calls={len(tool_calls)}, "
+                f"tool_names={[tc.tool_name for tc in tool_calls]}, "
+                f"final_tools={[t.name for t in final_tools]}"
+            )
 
             if INTEGRATION_TESTS_MODE and tool_calls:
                 for tool_call in tool_calls:
