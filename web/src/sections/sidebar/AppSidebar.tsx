@@ -64,7 +64,7 @@ import {
   SvgEditBig,
   SvgFolderPlus,
   SvgMoreHorizontal,
-  SvgOnyxOctagon,
+
   SvgSearchMenu,
   SvgSettings,
 } from "@opal/icons";
@@ -80,6 +80,12 @@ import { errorHandlingFetcher } from "@/lib/fetcher";
 import UserAvatarPopover from "@/sections/sidebar/UserAvatarPopover";
 import ChatSearchCommandMenu from "@/sections/sidebar/ChatSearchCommandMenu";
 import { useQueryController } from "@/providers/QueryControllerProvider";
+import { ColnitiaLogo } from "@/lib/colnitia/ColnitiaLogo";
+
+// Wrapper to use ColnitiaLogo where an icon component is expected
+function ColnitiaIcon(props: React.SVGProps<SVGSVGElement>) {
+  return <ColnitiaLogo size={20} className={props.className} />;
+}
 
 // Visible-agents = pinned-agents + current-agent (if current-agent not in pinned-agents)
 // OR Visible-agents = pinned-agents (if current-agent in pinned-agents)
@@ -556,7 +562,7 @@ const MemoizedAppSidebarInner = memo(
           <SidebarTab
             icon={
               folded || visibleAgents.length === 0
-                ? SvgOnyxOctagon
+                ? ColnitiaIcon
                 : SvgMoreHorizontal
             }
             href="/app/agents"

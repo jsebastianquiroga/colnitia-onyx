@@ -669,16 +669,16 @@ export default function AppPage({ firstMessage }: ChatPageProps) {
         >
           {({ getRootProps }) => (
             <div
-              className="h-full w-full flex flex-col items-center outline-none relative"
+              className="h-full w-full min-w-0 flex flex-col items-center outline-none relative"
               {...getRootProps({ tabIndex: -1 })}
             >
               {/* Main content grid — 3 rows, animated */}
               <div
-                className="flex-1 w-full grid min-h-0 transition-[grid-template-rows] duration-150 ease-in-out"
+                className="flex-1 w-full min-w-0 grid min-h-0 transition-[grid-template-rows] duration-150 ease-in-out"
                 style={gridStyle}
               >
                 {/* ── Top row: ChatUI / WelcomeMessage / ProjectUI ── */}
-                <div className="row-start-1 min-h-0 overflow-hidden flex flex-col items-center">
+                <div className="row-start-1 min-h-0 overflow-hidden flex flex-col items-center px-2 sm:px-0">
                   {/* ChatUI */}
                   <Fade
                     show={
