@@ -14,7 +14,7 @@ export default function LoginText() {
         {(settings && settings?.enterpriseSettings?.application_name) || APP_NAME}
       </Text>
       <Text as="p" text03 mainUiMuted>
-        Your open source AI platform for work
+        Plataforma de IA empresarial para PYMEs colombianas
       </Text>
     </div>
   );
