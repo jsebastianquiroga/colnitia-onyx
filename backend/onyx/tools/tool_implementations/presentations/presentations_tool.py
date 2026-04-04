@@ -7,7 +7,6 @@ from typing_extensions import override
 logger = logging.getLogger(__name__)
 
 from onyx.chat.emitter import Emitter
-from onyx.configs.app_configs import WEB_DOMAIN
 from onyx.server.features.presentations.generator import generate_presentation_html
 from onyx.server.features.presentations.generator import save_presentation
 from onyx.server.query_and_chat.placement import Placement
@@ -205,10 +204,8 @@ class PresentationsTool(Tool[None]):
                 emit_error_packet=True,
             )
 
-        # Build URL - backend serves at /files/presentations/{filename}
-        # Next.js proxy adds /api/ prefix for frontend access
-        base_url = WEB_DOMAIN.rstrip("/") if WEB_DOMAIN else ""
-        view_url = f"{base_url}/api/files/presentations/{filename}"
+        # Use relative URL so it works regardless of WEB_DOMAIN configuration
+        view_url = f"/api/files/presentations/{filename}"
 
         # PPTX generation is deferred - set download_url to None
         download_url: str | None = None
