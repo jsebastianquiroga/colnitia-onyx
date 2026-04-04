@@ -194,16 +194,18 @@ def _safe_run_single_tool(
             f"with args keys: {list(tool_call.tool_args.keys())}"
         )
         try:
+            logger.info(f"[TOOL_EXEC] About to call tool.run() for '{tool.name}'")
             tool_response = tool.run(
                 placement=tool_call.placement,
                 override_kwargs=override_kwargs,
                 **tool_call.tool_args,
             )
+            logger.info(f"[TOOL_EXEC] tool.run() completed for '{tool.name}', response type: {type(tool_response.rich_response).__name__ if tool_response.rich_response else 'None'}")
             span_fn.span_data.output = tool_response.llm_facing_response
         except ToolCallException as e:
             # ToolCallException is an expected error from tool execution
             # Use llm_facing_message which is specifically designed for LLM consumption
-            logger.error(f"Tool call error for {tool.name}: {e}")
+            logger.error(f"[TOOL_EXEC] ToolCallException for {tool.name}: {e}")
             tool_response = ToolResponse(
                 rich_response=None,
                 llm_facing_response=GENERIC_TOOL_ERROR_MESSAGE.format(
@@ -226,7 +228,7 @@ def _safe_run_single_tool(
             )
         except ToolExecutionException as e:
             # Unexpected error during tool execution
-            logger.error(f"Unexpected error running tool {tool.name}: {e}")
+            logger.error(f"[TOOL_EXEC] ToolExecutionException for {tool.name}: {e}", exc_info=True)
             tool_response = ToolResponse(
                 rich_response=None,
                 llm_facing_response=GENERIC_TOOL_ERROR_MESSAGE.format(error=str(e)),
@@ -253,7 +255,7 @@ def _safe_run_single_tool(
                 )
         except Exception as e:
             # Unexpected error during tool execution
-            logger.error(f"Unexpected error running tool {tool.name}: {e}")
+            logger.error(f"[TOOL_EXEC] Unexpected exception for {tool.name}: {e}", exc_info=True)
             tool_response = ToolResponse(
                 rich_response=None,
                 llm_facing_response=GENERIC_TOOL_ERROR_MESSAGE.format(error=str(e)),
