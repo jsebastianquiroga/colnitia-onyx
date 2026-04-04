@@ -20,7 +20,7 @@ import {
   SvgImage,
   SvgMcp,
   SvgNetworkGraph,
-  SvgOnyxOctagon,
+
   SvgPaintBrush,
   SvgProgressBars,
   SvgSearchMenu,
@@ -80,7 +80,7 @@ export const ADMIN_ROUTES = {
   },
   AGENTS: {
     path: "/admin/agents",
-    icon: SvgOnyxOctagon,
+    icon: SvgTerminal,
     title: "Agents",
     sidebarLabel: "Agents",
   },

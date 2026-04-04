@@ -23,7 +23,7 @@ import { Disabled, Hoverable } from "@opal/core";
 import { Content } from "@opal/layouts";
 import {
   SvgArrowExchange,
-  SvgOnyxOctagon,
+
   SvgOrganization,
   SvgRefreshCw,
   SvgSparkle,
@@ -355,7 +355,7 @@ export function ModelsAccessField<T extends BaseLLMFormValues>({
             ) : (
               <div className="w-full p-2">
                 <Content
-                  icon={SvgOnyxOctagon}
+                  icon={SvgOrganization}
                   title="No agents added"
                   description="This provider will not be used by any agents."
                   variant="section"

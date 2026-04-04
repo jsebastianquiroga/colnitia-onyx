@@ -56,7 +56,7 @@ import {
   SvgFold,
   SvgImage,
   SvgLock,
-  SvgOnyxOctagon,
+
   SvgSliders,
   SvgUsers,
   SvgTrash,
@@ -1209,7 +1209,7 @@ export default function AgentEditorPage({
                 <Form className="h-full w-full">
                   <SettingsLayouts.Root>
                     <SettingsLayouts.Header
-                      icon={SvgOnyxOctagon}
+                      icon={SvgSliders}
                       title={existingAgent ? "Edit Agent" : "Create Agent"}
                       rightChildren={
                         <div className="flex gap-2">
