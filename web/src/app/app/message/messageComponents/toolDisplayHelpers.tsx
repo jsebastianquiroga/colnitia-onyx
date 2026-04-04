@@ -17,6 +17,7 @@ import {
   SvgUser,
   SvgCircle,
   SvgBookOpen,
+  SvgFileChartPie,
 } from "@opal/icons";
 
 /**
@@ -97,6 +98,8 @@ export function getToolName(packets: Packet[]): string {
       );
     case PacketType.IMAGE_GENERATION_TOOL_START:
       return "Generate Image";
+    case PacketType.PRESENTATION_TOOL_START:
+      return "Generate Presentation";
     case PacketType.DEEP_RESEARCH_PLAN_START:
       return "Generate plan";
     case PacketType.RESEARCH_AGENT_START:
@@ -134,6 +137,8 @@ export function getToolIcon(packets: Packet[]): JSX.Element {
       return <FiTool className="w-3.5 h-3.5" />;
     case PacketType.IMAGE_GENERATION_TOOL_START:
       return <SvgImage className="w-3.5 h-3.5" />;
+    case PacketType.PRESENTATION_TOOL_START:
+      return <SvgFileChartPie className="w-3.5 h-3.5" />;
     case PacketType.DEEP_RESEARCH_PLAN_START:
       return <FiList className="w-3.5 h-3.5" />;
     case PacketType.RESEARCH_AGENT_START:
