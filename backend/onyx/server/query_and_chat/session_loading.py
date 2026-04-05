@@ -40,6 +40,8 @@ from onyx.server.query_and_chat.streaming_models import OpenUrlStart
 from onyx.server.query_and_chat.streaming_models import OpenUrlUrls
 from onyx.server.query_and_chat.streaming_models import OverallStop
 from onyx.server.query_and_chat.streaming_models import Packet
+from onyx.server.query_and_chat.streaming_models import PresentationToolFinal
+from onyx.server.query_and_chat.streaming_models import PresentationToolStart
 from onyx.server.query_and_chat.streaming_models import PythonToolDelta
 from onyx.server.query_and_chat.streaming_models import PythonToolStart
 from onyx.server.query_and_chat.streaming_models import ReasoningDelta
@@ -53,6 +55,9 @@ from onyx.server.query_and_chat.streaming_models import TopLevelBranching
 from onyx.tools.tool_implementations.file_reader.file_reader_tool import FileReaderTool
 from onyx.tools.tool_implementations.images.image_generation_tool import (
     ImageGenerationTool,
+)
+from onyx.tools.tool_implementations.presentations.presentations_tool import (
+    PresentationsTool,
 )
 from onyx.tools.tool_implementations.memory.memory_tool import MemoryTool
 from onyx.tools.tool_implementations.open_url.open_url_tool import OpenURLTool
@@ -174,6 +179,35 @@ def create_image_generation_packets(
         )
     )
 
+    return packets
+
+
+def create_presentation_packets(
+    view_url: str,
+    download_url: str | None,
+    filename: str,
+    slides_count: int,
+    turn_index: int,
+    tab_index: int = 0,
+) -> list[Packet]:
+    packets: list[Packet] = []
+    placement = Placement(turn_index=turn_index, tab_index=tab_index)
+
+    packets.append(Packet(placement=placement, obj=PresentationToolStart()))
+
+    packets.append(
+        Packet(
+            placement=placement,
+            obj=PresentationToolFinal(
+                view_url=view_url,
+                download_url=download_url,
+                filename=filename,
+                slides_count=slides_count,
+            ),
+        )
+    )
+
+    packets.append(Packet(placement=placement, obj=SectionEnd()))
     return packets
 
 
@@ -636,6 +670,23 @@ def translate_assistant_message_to_packets(
                                     index=memory_data.get("index"),
                                 )
                             )
+
+                    elif tool.in_code_tool_id == PresentationsTool.__name__:
+                        if tool_call.tool_call_response:
+                            try:
+                                response_data = json.loads(tool_call.tool_call_response)
+                                turn_tool_packets.extend(
+                                    create_presentation_packets(
+                                        view_url=response_data.get("view_url", ""),
+                                        download_url=response_data.get("download_url"),
+                                        filename=response_data.get("filename", ""),
+                                        slides_count=response_data.get("slides_count", 0),
+                                        turn_index=turn_num,
+                                        tab_index=tool_call.tab_index,
+                                    )
+                                )
+                            except (json.JSONDecodeError, KeyError):
+                                pass
 
                     elif tool.in_code_tool_id == PythonTool.__name__:
                         code = cast(
