@@ -236,6 +236,7 @@ class PresentationsTool(Tool[None]):
             {
                 "view_url": view_url,
                 "download_url": download_url,
+                "filename": filename,
                 "slides_count": len(slides),
                 "slides_data": slides,
             }

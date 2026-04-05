@@ -573,6 +573,12 @@ def translate_assistant_message_to_packets(
                 # Here we do a try because some tools may get deleted before the session is reloaded.
                 try:
                     tool = get_tool_by_id(tool_call.tool_id, db_session)
+                    logger.debug(
+                        f"[SESSION_RELOAD] tool_call {tool_call.id}: "
+                        f"tool_id={tool_call.tool_id}, "
+                        f"in_code_tool_id={tool.in_code_tool_id}, "
+                        f"has_response={bool(tool_call.tool_call_response)}"
+                    )
                     if tool.in_code_tool_id == RESEARCH_AGENT_IN_CODE_ID:
                         research_agent_count += 1
 
@@ -674,19 +680,55 @@ def translate_assistant_message_to_packets(
                     elif tool.in_code_tool_id == PresentationsTool.__name__:
                         if tool_call.tool_call_response:
                             try:
-                                response_data = json.loads(tool_call.tool_call_response)
+                                response_data = json.loads(
+                                    tool_call.tool_call_response
+                                )
+                                # Handle double-encoded JSON (string inside string)
+                                if isinstance(response_data, str):
+                                    response_data = json.loads(response_data)
+                                # Extract filename from response or derive from view_url
+                                filename = response_data.get("filename", "")
+                                if not filename and response_data.get("view_url"):
+                                    filename = response_data["view_url"].rsplit(
+                                        "/", 1
+                                    )[-1]
                                 turn_tool_packets.extend(
                                     create_presentation_packets(
                                         view_url=response_data.get("view_url", ""),
-                                        download_url=response_data.get("download_url"),
-                                        filename=response_data.get("filename", ""),
-                                        slides_count=response_data.get("slides_count", 0),
+                                        download_url=response_data.get(
+                                            "download_url"
+                                        ),
+                                        filename=filename,
+                                        slides_count=response_data.get(
+                                            "slides_count", 0
+                                        ),
                                         turn_index=turn_num,
                                         tab_index=tool_call.tab_index,
                                     )
                                 )
-                            except (json.JSONDecodeError, KeyError):
-                                pass
+                            except (
+                                json.JSONDecodeError,
+                                KeyError,
+                                TypeError,
+                                AttributeError,
+                            ) as e:
+                                logger.warning(
+                                    f"Failed to reconstruct presentation packets for "
+                                    f"tool_call {tool_call.id}: {e}. "
+                                    f"Response preview: {tool_call.tool_call_response[:200] if tool_call.tool_call_response else 'None'}"
+                                )
+                                # Fallback: emit minimal presentation packets so it
+                                # doesn't fall through to the custom tool renderer
+                                turn_tool_packets.extend(
+                                    create_presentation_packets(
+                                        view_url="",
+                                        download_url=None,
+                                        filename="presentation",
+                                        slides_count=0,
+                                        turn_index=turn_num,
+                                        tab_index=tool_call.tab_index,
+                                    )
+                                )
 
                     elif tool.in_code_tool_id == PythonTool.__name__:
                         code = cast(
