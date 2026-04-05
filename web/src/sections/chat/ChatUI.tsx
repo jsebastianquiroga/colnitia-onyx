@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useCallback, useMemo, useRef } from "react";
+import { cn } from "@/lib/utils";
+import useScreenSize from "@/hooks/useScreenSize";
 import { Message } from "@/app/app/interfaces";
 import { OnyxDocument, MinimalOnyxDocument } from "@/lib/search/interfaces";
 import HumanMessage from "@/app/app/message/HumanMessage";
@@ -63,6 +65,9 @@ const ChatUI = React.memo(
     onResubmit,
     anchorNodeId,
   }: ChatUIProps) => {
+    const { isMobile, isTablet } = useScreenSize();
+    const isMobileLayout = isMobile || isTablet;
+
     // Get messages and error state from store
     const messages = useCurrentMessageHistory();
     const messageTree = useCurrentMessageTree();
@@ -115,7 +120,10 @@ const ChatUI = React.memo(
 
     return (
       <>
-        <div className="flex flex-col w-full max-w-[var(--app-page-main-content-width)] h-full pt-4 pb-8 pr-1 gap-12">
+        <div className={cn(
+          "flex flex-col w-full h-full pt-4 pb-8 pr-1 gap-12",
+          isMobileLayout ? "px-3" : "max-w-[var(--app-page-main-content-width)]"
+        )}>
           {messages.map((message, i) => {
             const messageReactComponentKey = `message-${message.nodeId}`;
             const parentMessage = message.parentNodeId
@@ -144,6 +152,7 @@ const ChatUI = React.memo(
                       parentMessage?.childrenNodeIds ?? emptyChildrenIds
                     }
                     onMessageSelection={onMessageSelection}
+                    isMobile={isMobile}
                   />
                 </div>
               );
@@ -195,6 +204,7 @@ const ChatUI = React.memo(
                     processingDurationSeconds={
                       message.processingDurationSeconds
                     }
+                    isMobile={isMobile}
                   />
                 </div>
               );

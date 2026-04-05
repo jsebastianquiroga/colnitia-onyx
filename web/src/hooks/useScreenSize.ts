@@ -12,6 +12,7 @@ export interface ScreenSize {
   height: number;
   width: number;
   isMobile: boolean;
+  isTablet: boolean;
   isSmallScreen: boolean;
   isMediumScreen: boolean;
 }
@@ -35,6 +36,9 @@ export default function useScreenSize(): ScreenSize {
   });
 
   const isMobile = sizes.width <= MOBILE_SIDEBAR_BREAKPOINT_PX;
+  const isTablet =
+    sizes.width > MOBILE_SIDEBAR_BREAKPOINT_PX &&
+    sizes.width <= DESKTOP_SMALL_BREAKPOINT_PX;
   const isSmall = sizes.width <= DESKTOP_SMALL_BREAKPOINT_PX;
   const isMedium = sizes.width <= DESKTOP_MEDIUM_BREAKPOINT_PX;
 
@@ -42,6 +46,7 @@ export default function useScreenSize(): ScreenSize {
     height: sizes.height,
     width: sizes.width,
     isMobile: isMounted && isMobile,
+    isTablet: isMounted && isTablet,
     isSmallScreen: isMounted && isSmall,
     isMediumScreen: isMounted && isMedium,
   };

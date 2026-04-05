@@ -6,6 +6,7 @@ import { FullChatState, RenderType } from "../interfaces";
 import { TurnGroup } from "./transformers";
 import { cn } from "@/lib/utils";
 import AgentAvatar from "@/refresh-components/avatars/AgentAvatar";
+import useScreenSize from "@/hooks/useScreenSize";
 import Text from "@/refresh-components/texts/Text";
 import { useTimelineExpansion } from "@/app/app/message/messageComponents/timeline/hooks/useTimelineExpansion";
 import { useTimelineMetrics } from "@/app/app/message/messageComponents/timeline/hooks/useTimelineMetrics";
@@ -46,9 +47,12 @@ function TimelineContainer({
   headerContent,
   children,
 }: TimelineContainerProps) {
+  const { isMobile } = useScreenSize();
+  const avatarSize = isMobile ? 24 : 32;
+
   return (
     <TimelineRoot>
-      <TimelineHeaderRow left={<AgentAvatar agent={agent} size={24} />}>
+      <TimelineHeaderRow left={<AgentAvatar agent={agent} size={avatarSize} />}>
         {headerContent}
       </TimelineHeaderRow>
       {children}

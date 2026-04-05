@@ -6,6 +6,8 @@ import React, {
   useMemo,
   useEffect,
   useLayoutEffect,
+  useState,
+  useCallback,
 } from "react";
 import { Packet, StopReason } from "@/app/app/services/streamingModels";
 import CustomToolAuthCard from "@/app/app/message/messageComponents/CustomToolAuthCard";
@@ -25,6 +27,10 @@ import { AgentTimeline } from "@/app/app/message/messageComponents/timeline/Agen
 import { useVoiceMode } from "@/providers/VoiceModeProvider";
 import { getTextContent } from "@/app/app/services/packetUtils";
 import { removeThinkingTokens } from "@/app/app/services/thinkingTokens";
+import useLongPress from "@/hooks/useLongPress";
+import ActionSheet, {
+  ActionSheetAction,
+} from "@/components/mobile/ActionSheet";
 
 // Type for the regeneration factory function passed from ChatUI
 export type RegenerationFactory = (regenerationRequest: {
@@ -49,6 +55,8 @@ export interface AgentMessageProps {
   parentMessage?: Message | null;
   // Duration in seconds for processing this message (agent messages only)
   processingDurationSeconds?: number;
+  // Layout
+  isMobile?: boolean;
 }
 
 // TODO: Consider more robust comparisons:
@@ -76,7 +84,8 @@ function arePropsEqual(
     prev.parentMessage?.messageId === next.parentMessage?.messageId &&
     prev.llmManager?.isLoadingProviders ===
       next.llmManager?.isLoadingProviders &&
-    prev.processingDurationSeconds === next.processingDurationSeconds
+    prev.processingDurationSeconds === next.processingDurationSeconds &&
+    prev.isMobile === next.isMobile
     // Skip: chatState.regenerate, chatState.setPresentingDocument,
     //       most of llmManager, onMessageSelection (function/object props)
   );
@@ -95,6 +104,7 @@ const AgentMessage = React.memo(function AgentMessage({
   onRegenerate,
   parentMessage,
   processingDurationSeconds,
+  isMobile = false,
 }: AgentMessageProps) {
   const markdownRef = useRef<HTMLDivElement>(null);
   const finalAnswerRef = useRef<HTMLDivElement>(null);
@@ -246,10 +256,55 @@ const AgentMessage = React.memo(function AgentMessage({
     };
   }, [nodeId, resetTTS]);
 
+  // Mobile long-press action sheet
+  const [actionSheetOpen, setActionSheetOpen] = useState(false);
+
+  const handleLongPress = useCallback(() => {
+    if (isMobile) {
+      setActionSheetOpen(true);
+    }
+  }, [isMobile]);
+
+  const longPressHandlers = useLongPress(handleLongPress);
+
+  const agentActionSheetActions = useMemo<ActionSheetAction[]>(() => {
+    const actions: ActionSheetAction[] = [
+      {
+        label: "Copiar",
+        onPress: () => {
+          const textContent = removeThinkingTokens(getTextContent(rawPackets));
+          if (typeof textContent === "string") {
+            navigator.clipboard.writeText(textContent);
+          }
+        },
+      },
+    ];
+    if (onRegenerate && parentMessage) {
+      actions.push({
+        label: "Regenerar",
+        onPress: () => {
+          if (messageId !== undefined && parentMessage) {
+            const regenerate = onRegenerate({
+              messageId,
+              parentMessage,
+            });
+            regenerate({
+              name: "",
+              provider: "",
+              modelName: chatState.overriddenModel ?? "",
+            });
+          }
+        },
+      });
+    }
+    return actions;
+  }, [rawPackets, onRegenerate, parentMessage, messageId, chatState.overriddenModel]);
+
   return (
     <div
       className="flex flex-col gap-3"
       data-testid={isComplete ? "onyx-ai-message" : undefined}
+      {...(isMobile ? longPressHandlers : {})}
     >
       {/* Row 1: Two-column layout for tool steps */}
 
@@ -345,6 +400,13 @@ const AgentMessage = React.memo(function AgentMessage({
           currentModelName={chatState.overriddenModel}
           citations={citations}
           documentMap={documentMap}
+        />
+      )}
+      {isMobile && (
+        <ActionSheet
+          open={actionSheetOpen}
+          onClose={() => setActionSheetOpen(false)}
+          actions={agentActionSheetActions}
         />
       )}
     </div>

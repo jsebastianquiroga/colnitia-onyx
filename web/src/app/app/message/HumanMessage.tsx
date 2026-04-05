@@ -1,17 +1,20 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FileDescriptor } from "@/app/app/interfaces";
 import "katex/dist/katex.min.css";
 import MessageSwitcher from "@/app/app/message/MessageSwitcher";
 import Text from "@/refresh-components/texts/Text";
 import { cn } from "@/lib/utils";
-import useScreenSize from "@/hooks/useScreenSize";
 import CopyIconButton from "@/refresh-components/buttons/CopyIconButton";
 import { Button } from "@opal/components";
 import { SvgEdit } from "@opal/icons";
 import { Hoverable } from "@opal/core";
 import FileDisplay from "./FileDisplay";
+import useLongPress from "@/hooks/useLongPress";
+import ActionSheet, {
+  ActionSheetAction,
+} from "@/components/mobile/ActionSheet";
 
 interface MessageEditingProps {
   content: string;
@@ -102,6 +105,9 @@ interface HumanMessageProps {
   // Streaming and generation
   stopGenerating?: () => void;
   disableSwitchingForStreaming?: boolean;
+
+  // Layout
+  isMobile?: boolean;
 }
 
 // Memoization comparison - compare by value for primitives, by reference for objects/arrays
@@ -116,7 +122,8 @@ function arePropsEqual(
     prev.files === next.files &&
     prev.disableSwitchingForStreaming === next.disableSwitchingForStreaming &&
     prev.otherMessagesCanSwitchTo === next.otherMessagesCanSwitchTo &&
-    prev.onEdit === next.onEdit
+    prev.onEdit === next.onEdit &&
+    prev.isMobile === next.isMobile
     // Skip: stopGenerating, onMessageSelection (inline function props)
   );
 }
@@ -131,6 +138,7 @@ const HumanMessage = React.memo(function HumanMessage({
   onMessageSelection,
   stopGenerating = () => null,
   disableSwitchingForStreaming = false,
+  isMobile = false,
 }: HumanMessageProps) {
   // TODO (@raunakab):
   //
@@ -139,7 +147,33 @@ const HumanMessage = React.memo(function HumanMessage({
   const [content, setContent] = useState(initialContent);
 
   const [isEditing, setIsEditing] = useState(false);
-  const { isMobile } = useScreenSize();
+  const [actionSheetOpen, setActionSheetOpen] = useState(false);
+
+  const handleLongPress = useCallback(() => {
+    if (isMobile) {
+      setActionSheetOpen(true);
+    }
+  }, [isMobile]);
+
+  const longPressHandlers = useLongPress(handleLongPress);
+
+  const actionSheetActions = useMemo<ActionSheetAction[]>(() => {
+    const actions: ActionSheetAction[] = [
+      {
+        label: "Copiar",
+        onPress: () => {
+          navigator.clipboard.writeText(content);
+        },
+      },
+    ];
+    if (onEdit && messageId !== undefined && messageId !== null) {
+      actions.push({
+        label: "Editar",
+        onPress: () => setIsEditing(true),
+      });
+    }
+    return actions;
+  }, [content, onEdit, messageId]);
 
   // Use nodeId for switching (finding position in siblings)
   const indexInSiblings = otherMessagesCanSwitchTo?.indexOf(nodeId);
@@ -202,6 +236,7 @@ const HumanMessage = React.memo(function HumanMessage({
       <div
         id="onyx-human-message"
         className="flex flex-col justify-end w-full relative"
+        {...(isMobile ? longPressHandlers : {})}
       >
         <FileDisplay files={files || []} />
         {isEditing ? (
@@ -224,9 +259,12 @@ const HumanMessage = React.memo(function HumanMessage({
             {onEdit && !isMobile && copyEditButton}
             <div className="md:max-w-[37.5rem]">
               <div
-                className={
-                  "max-w-[30rem] md:max-w-[37.5rem] whitespace-break-spaces break-anywhere rounded-t-16 rounded-bl-16 bg-background-tint-02 py-2 px-3"
-                }
+                className={cn(
+                  "max-w-[30rem] md:max-w-[37.5rem] whitespace-break-spaces break-anywhere bg-background-tint-02 py-2 px-3",
+                  isMobile
+                    ? "rounded-t-2xl rounded-bl-2xl"
+                    : "rounded-t-16 rounded-bl-16"
+                )}
                 onCopy={(e) => {
                   const selection = window.getSelection();
                   if (selection) {
@@ -277,6 +315,13 @@ const HumanMessage = React.memo(function HumanMessage({
               />
             )}
         </div>
+        {isMobile && (
+          <ActionSheet
+            open={actionSheetOpen}
+            onClose={() => setActionSheetOpen(false)}
+            actions={actionSheetActions}
+          />
+        )}
       </div>
     </Hoverable.Root>
   );
