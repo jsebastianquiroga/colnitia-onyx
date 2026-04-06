@@ -1,12 +1,21 @@
 import json
 import logging
+import re
+from io import BytesIO
 from typing import Any
+from uuid import UUID
 
 from typing_extensions import override
 
 logger = logging.getLogger(__name__)
 
 from onyx.chat.emitter import Emitter
+from onyx.configs.constants import FileOrigin
+from onyx.db.artifact import create_artifact
+from onyx.db.artifact import create_artifact_version
+from onyx.db.enums import ArtifactType
+from onyx.db.engine.sql_engine import get_session_with_current_tenant
+from onyx.file_store.file_store import get_default_file_store
 from onyx.server.features.presentations.generator import generate_presentation_html
 from onyx.server.features.presentations.generator import save_presentation
 from onyx.server.query_and_chat.placement import Placement
@@ -31,9 +40,12 @@ class PresentationsTool(Tool[None]):
     )
     DISPLAY_NAME = "Presentations Generator"
 
-    def __init__(self, tool_id: int, emitter: Emitter) -> None:
+    def __init__(
+        self, tool_id: int, emitter: Emitter, user_id: UUID | None = None
+    ) -> None:
         super().__init__(emitter=emitter)
         self._id = tool_id
+        self._user_id = user_id
 
     @property
     @override
@@ -171,6 +183,62 @@ class PresentationsTool(Tool[None]):
             )
         )
 
+    def _save_to_artifact_store(
+        self,
+        title: str,
+        html: str,
+        slides: list[dict[str, Any]],
+    ) -> str | None:
+        """Save presentation HTML to FileStore and create Artifact + ArtifactVersion.
+        Returns the artifact_id as string, or None on failure."""
+        if self._user_id is None:
+            logger.warning("No user_id available; skipping artifact creation")
+            return None
+
+        try:
+            with get_session_with_current_tenant() as db_session:
+                artifact = create_artifact(
+                    db_session=db_session,
+                    user_id=self._user_id,
+                    artifact_type=ArtifactType.PRESENTATION,
+                    title=title,
+                )
+                artifact_id = artifact.id
+
+                safe_title = re.sub(r"[^\w\s-]", "", title).strip()
+                safe_title = re.sub(r"\s+", "_", safe_title)[:50]
+                file_store_key = (
+                    f"artifacts/{artifact_id}/v1/{safe_title}.html"
+                )
+
+                file_store = get_default_file_store()
+                html_bytes = html.encode("utf-8")
+                file_store.save_file(
+                    content=BytesIO(html_bytes),
+                    display_name=f"{safe_title}.html",
+                    file_origin=FileOrigin.OTHER,
+                    file_type="text/html",
+                    file_id=file_store_key,
+                )
+
+                create_artifact_version(
+                    db_session=db_session,
+                    artifact_id=artifact_id,
+                    version_number=1,
+                    file_store_key=file_store_key,
+                    file_size=len(html_bytes),
+                    metadata={
+                        "slides_count": len(slides),
+                        "theme": slides[0].get("theme") if slides else None,
+                    },
+                )
+
+                db_session.commit()
+                return str(artifact_id)
+        except Exception:
+            logger.exception("Failed to save presentation to artifact store")
+            return None
+
     @override
     def run(
         self,
@@ -197,6 +265,7 @@ class PresentationsTool(Tool[None]):
 
         try:
             html = generate_presentation_html(title, slides, theme)
+            # Legacy filesystem save (kept for backward compat)
             filename = save_presentation(title, html)
         except Exception as e:
             raise ToolExecutionException(
@@ -204,10 +273,15 @@ class PresentationsTool(Tool[None]):
                 emit_error_packet=True,
             )
 
-        # Use relative URL so it works regardless of WEB_DOMAIN configuration
-        view_url = f"/api/files/presentations/{filename}"
+        # Save to persistent artifact store
+        artifact_id = self._save_to_artifact_store(title, html, slides)
 
-        # PPTX generation is deferred - set download_url to None
+        # Build view_url: prefer artifact URL, fall back to legacy file URL
+        if artifact_id:
+            view_url = f"/api/artifacts/{artifact_id}/content"
+        else:
+            view_url = f"/api/files/presentations/{filename}"
+
         download_url: str | None = None
 
         final_response = FinalPresentationResponse(
@@ -216,9 +290,9 @@ class PresentationsTool(Tool[None]):
             filename=filename,
             slides_count=len(slides),
             slides_data=slides,
+            artifact_id=artifact_id,
         )
 
-        # Emit final packet for frontend artifact rendering
         self.emitter.emit(
             Packet(
                 placement=placement,
@@ -227,11 +301,11 @@ class PresentationsTool(Tool[None]):
                     download_url=download_url,
                     filename=filename,
                     slides_count=len(slides),
+                    artifact_id=artifact_id,
                 ),
             )
         )
 
-        # LLM-facing response includes slides_data so LLM can reference/modify in follow-up turns
         llm_response = json.dumps(
             {
                 "view_url": view_url,
@@ -239,6 +313,7 @@ class PresentationsTool(Tool[None]):
                 "filename": filename,
                 "slides_count": len(slides),
                 "slides_data": slides,
+                "artifact_id": artifact_id,
             }
         )
 

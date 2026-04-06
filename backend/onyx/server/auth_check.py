@@ -65,6 +65,9 @@ PUBLIC_ENDPOINT_SPECS = [
     ("/build/sessions/{session_id}/webapp/{path:path}", {"GET"}),
     # public presentation file serving (Colnitia)
     ("/files/presentations/{filename}", {"GET"}),
+    # public artifact access (Colnitia)
+    ("/artifacts/public/{artifact_id}", {"GET"}),
+    ("/artifacts/public/{artifact_id}/content", {"GET"}),
 ]
 
 

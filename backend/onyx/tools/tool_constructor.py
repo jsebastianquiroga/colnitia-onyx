@@ -289,6 +289,7 @@ def construct_tools(
                     PresentationsTool(
                         tool_id=db_tool_model.id,
                         emitter=emitter,
+                        user_id=user.id,
                     )
                 ]
 

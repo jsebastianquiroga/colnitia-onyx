@@ -220,6 +220,7 @@ export interface PresentationToolFinal extends BaseObj {
   download_url: string | null;
   filename: string;
   slides_count: number;
+  artifact_id: string | null;
 }
 
 // File Reader Packets

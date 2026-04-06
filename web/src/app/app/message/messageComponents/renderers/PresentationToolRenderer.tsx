@@ -1,5 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { SvgFileChartPie, SvgExternalLink, SvgMaximize2 } from "@opal/icons";
+import {
+  SvgFileChartPie,
+  SvgExternalLink,
+  SvgMaximize2,
+  SvgFolder,
+} from "@opal/icons";
 import {
   PacketType,
   PresentationToolPacket,
@@ -92,6 +97,11 @@ export const PresentationToolRenderer: MessageRenderer<
         .replace(/_/g, " ")
         .replace(/ \d{8} \d{6}$/, "");
 
+      // Use artifact URL if available, otherwise fall back to legacy view_url
+      const effectiveViewUrl = finalData.artifact_id
+        ? `/api/artifacts/${finalData.artifact_id}/content`
+        : finalData.view_url;
+
       const presentationHeader = (
         <div className="flex items-center justify-between px-4 pt-3">
           <div className="flex items-center gap-2">
@@ -115,7 +125,7 @@ export const PresentationToolRenderer: MessageRenderer<
                 <SvgMaximize2 className="w-4 h-4" />
               </button>
               <a
-                href={finalData.view_url}
+                href={effectiveViewUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-text-03 hover:bg-background-neutral-02 transition-colors"
@@ -166,7 +176,7 @@ export const PresentationToolRenderer: MessageRenderer<
                   onClose={() => setModalOpen(false)}
                 >
                   <iframe
-                    src={finalData.view_url}
+                    src={effectiveViewUrl}
                     className="w-full h-full border-0"
                     title="Presentation preview"
                     sandbox="allow-scripts allow-same-origin"
@@ -194,7 +204,7 @@ export const PresentationToolRenderer: MessageRenderer<
                 style={{ height: iframeHeight, transition: "height 0.3s ease" }}
               >
                 <iframe
-                  src={finalData.view_url}
+                  src={effectiveViewUrl}
                   className="w-full h-full border-0"
                   title="Presentation preview"
                   sandbox="allow-scripts allow-same-origin"
@@ -204,7 +214,7 @@ export const PresentationToolRenderer: MessageRenderer<
               {/* Actions */}
               <div className="flex items-center gap-2 px-4 pb-3">
                 <a
-                  href={finalData.view_url}
+                  href={effectiveViewUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 rounded-md bg-action-link-01 px-3 py-1.5 text-text-inverted-01 text-sm font-medium hover:opacity-90 transition-opacity"
@@ -223,6 +233,17 @@ export const PresentationToolRenderer: MessageRenderer<
                   >
                     <Text font="main-ui-action" color="text-01">
                       Download
+                    </Text>
+                  </a>
+                )}
+                {finalData.artifact_id && (
+                  <a
+                    href="/app/artifacts"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-border-02 bg-background-neutral-01 px-3 py-1.5 hover:bg-background-neutral-02 transition-colors"
+                  >
+                    <SvgFolder className="w-4 h-4" />
+                    <Text font="main-ui-action" color="text-01">
+                      View in Artifacts
                     </Text>
                   </a>
                 )}

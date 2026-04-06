@@ -295,6 +295,7 @@ class ArtifactType(str, PyEnum):
     IMAGE = "image"
     MARKDOWN = "markdown"
     EXCEL = "excel"
+    PRESENTATION = "presentation"
 
 
 class HierarchyNodeType(str, PyEnum):

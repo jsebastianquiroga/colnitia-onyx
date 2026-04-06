@@ -244,6 +244,7 @@ class PresentationToolFinal(BaseObj):
     download_url: str | None
     filename: str
     slides_count: int
+    artifact_id: str | None = None
 
 
 class PythonToolStart(BaseObj):

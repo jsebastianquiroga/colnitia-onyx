@@ -5361,3 +5361,74 @@ class HookExecutionLog(Base):
     )
 
     hook: Mapped["Hook"] = relationship("Hook", back_populates="execution_logs")
+
+
+class PersistentArtifact(Base):
+    __tablename__ = "persistent_artifact"
+
+    id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), primary_key=True, default=uuid4
+    )
+    user_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("user.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    artifact_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    title: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    current_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    is_public: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    shared_with_workspace: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    versions: Mapped[list["PersistentArtifactVersion"]] = relationship(
+        "PersistentArtifactVersion",
+        back_populates="artifact",
+        cascade="all, delete-orphan",
+        order_by="PersistentArtifactVersion.version_number",
+    )
+
+
+class PersistentArtifactVersion(Base):
+    __tablename__ = "persistent_artifact_version"
+
+    id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), primary_key=True, default=uuid4
+    )
+    artifact_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("persistent_artifact.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    version_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    file_store_key: Mapped[str] = mapped_column(Text, nullable=False)
+    file_size: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    metadata_: Mapped[dict | None] = mapped_column(
+        "metadata", PGJSONB(), nullable=True
+    )
+    source_chat_message_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("chat_message.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    artifact: Mapped["PersistentArtifact"] = relationship(
+        "PersistentArtifact", back_populates="versions"
+    )
+
+    __table_args__ = (
+        UniqueConstraint("artifact_id", "version_number", name="uq_persistent_artifact_version"),
+    )

@@ -62,6 +62,7 @@ import useScreenSize from "@/hooks/useScreenSize";
 import {
   SvgDevKit,
   SvgEditBig,
+  SvgFileChartPie,
   SvgFolderPlus,
   SvgMoreHorizontal,
 
@@ -597,6 +598,13 @@ const MemoizedAppSidebarInner = memo(
     const settingsButton = useMemo(
       () => (
         <div>
+          <SidebarTab
+            href="/app/artifacts"
+            icon={SvgFileChartPie}
+            folded={folded}
+          >
+            Artifacts
+          </SidebarTab>
           {(isAdmin || isCurator) && (
             <SidebarTab
               href={isCurator ? "/admin/agents" : "/admin/configuration/llm"}

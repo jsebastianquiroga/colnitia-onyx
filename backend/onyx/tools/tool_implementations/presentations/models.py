@@ -9,3 +9,4 @@ class FinalPresentationResponse(BaseModel):
     filename: str
     slides_count: int
     slides_data: list[dict[str, Any]]
+    artifact_id: str | None = None

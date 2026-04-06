@@ -189,6 +189,7 @@ def create_presentation_packets(
     slides_count: int,
     turn_index: int,
     tab_index: int = 0,
+    artifact_id: str | None = None,
 ) -> list[Packet]:
     packets: list[Packet] = []
     placement = Placement(turn_index=turn_index, tab_index=tab_index)
@@ -203,6 +204,7 @@ def create_presentation_packets(
                 download_url=download_url,
                 filename=filename,
                 slides_count=slides_count,
+                artifact_id=artifact_id,
             ),
         )
     )
@@ -686,6 +688,14 @@ def translate_assistant_message_to_packets(
                                 # Handle double-encoded JSON (string inside string)
                                 if isinstance(response_data, str):
                                     response_data = json.loads(response_data)
+
+                                # Build stable view_url from artifact_id if available
+                                artifact_id = response_data.get("artifact_id")
+                                if artifact_id:
+                                    view_url = f"/api/artifacts/{artifact_id}/content"
+                                else:
+                                    view_url = response_data.get("view_url", "")
+
                                 # Extract filename from response or derive from view_url
                                 filename = response_data.get("filename", "")
                                 if not filename and response_data.get("view_url"):
@@ -694,7 +704,7 @@ def translate_assistant_message_to_packets(
                                     )[-1]
                                 turn_tool_packets.extend(
                                     create_presentation_packets(
-                                        view_url=response_data.get("view_url", ""),
+                                        view_url=view_url,
                                         download_url=response_data.get(
                                             "download_url"
                                         ),
@@ -704,6 +714,7 @@ def translate_assistant_message_to_packets(
                                         ),
                                         turn_index=turn_num,
                                         tab_index=tool_call.tab_index,
+                                        artifact_id=artifact_id,
                                     )
                                 )
                             except (
