@@ -15,6 +15,8 @@ import { errorHandlingFetcher } from "@/lib/fetcher";
 import { cn } from "@/lib/utils";
 import ArtifactModal from "@/components/mobile/ArtifactModal";
 import useScreenSize from "@/hooks/useScreenSize";
+import InputTypeIn from "@/refresh-components/inputs/InputTypeIn";
+import InputSelect from "@/refresh-components/inputs/InputSelect";
 
 interface ArtifactVersion {
   id: string;
@@ -59,44 +61,57 @@ function ArtifactCard({
   const [editTitle, setEditTitle] = useState(artifact.title);
   const [deleting, setDeleting] = useState(false);
 
+  const patchArtifact = useCallback(
+    async (body: Record<string, unknown>) => {
+      try {
+        const res = await fetch(`/api/artifacts/${artifact.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) {
+          console.error("Failed to update artifact", await res.text());
+        }
+      } catch (e) {
+        console.error("Failed to update artifact", e);
+      }
+      onRefresh();
+    },
+    [artifact.id, onRefresh]
+  );
+
   const handleRename = useCallback(async () => {
     if (!editTitle.trim() || editTitle === artifact.title) {
       setEditing(false);
       return;
     }
-    await fetch(`/api/artifacts/${artifact.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: editTitle }),
-    });
+    await patchArtifact({ title: editTitle });
     setEditing(false);
-    onRefresh();
-  }, [editTitle, artifact.id, artifact.title, onRefresh]);
+  }, [editTitle, artifact.title, patchArtifact]);
 
   const handleToggleShare = useCallback(async () => {
-    await fetch(`/api/artifacts/${artifact.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        shared_with_workspace: !artifact.shared_with_workspace,
-      }),
+    await patchArtifact({
+      shared_with_workspace: !artifact.shared_with_workspace,
     });
-    onRefresh();
-  }, [artifact.id, artifact.shared_with_workspace, onRefresh]);
+  }, [artifact.shared_with_workspace, patchArtifact]);
 
   const handleTogglePublic = useCallback(async () => {
-    await fetch(`/api/artifacts/${artifact.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ is_public: !artifact.is_public }),
-    });
-    onRefresh();
-  }, [artifact.id, artifact.is_public, onRefresh]);
+    await patchArtifact({ is_public: !artifact.is_public });
+  }, [artifact.is_public, patchArtifact]);
 
   const handleDelete = useCallback(async () => {
     if (!confirm("Are you sure you want to delete this artifact?")) return;
     setDeleting(true);
-    await fetch(`/api/artifacts/${artifact.id}`, { method: "DELETE" });
+    try {
+      const res = await fetch(`/api/artifacts/${artifact.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        console.error("Failed to delete artifact", await res.text());
+      }
+    } catch (e) {
+      console.error("Failed to delete artifact", e);
+    }
     onRefresh();
   }, [artifact.id, onRefresh]);
 
@@ -114,18 +129,18 @@ function ArtifactCard({
             <SvgFileChartPie className="w-5 h-5 text-text-03 shrink-0" />
             <div className="flex flex-col gap-0.5">
               {editing ? (
-                <input
-                  className="bg-background-neutral-02 border border-border-02 rounded px-2 py-1 text-sm text-text-01"
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  onBlur={handleRename}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleRename();
-                    if (e.key === "Escape") setEditing(false);
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                  autoFocus
-                />
+                <div onClick={(e) => e.stopPropagation()}>
+                  <InputTypeIn
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    onBlur={handleRename}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleRename();
+                      if (e.key === "Escape") setEditing(false);
+                    }}
+                    autoFocus
+                  />
+                </div>
               ) : (
                 <Text font="main-ui-action" color="text-01">
                   {artifact.title}
@@ -234,17 +249,21 @@ export default function ArtifactsPage() {
           Artifacts
         </Text>
         <div className="flex items-center gap-2">
-          <select
-            className="bg-background-neutral-02 border border-border-02 rounded-md px-3 py-1.5 text-sm text-text-01"
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
+          <InputSelect
+            value={typeFilter || "all"}
+            onValueChange={(val) => setTypeFilter(val === "all" ? "" : val)}
           >
-            <option value="">All types</option>
-            <option value="presentation">Presentations</option>
-            <option value="web_app">Web Apps</option>
-            <option value="image">Images</option>
-            <option value="markdown">Markdown</option>
-          </select>
+            <InputSelect.Trigger placeholder="All types" />
+            <InputSelect.Content>
+              <InputSelect.Item value="all">All types</InputSelect.Item>
+              <InputSelect.Item value="presentation">
+                Presentations
+              </InputSelect.Item>
+              <InputSelect.Item value="web_app">Web Apps</InputSelect.Item>
+              <InputSelect.Item value="image">Images</InputSelect.Item>
+              <InputSelect.Item value="markdown">Markdown</InputSelect.Item>
+            </InputSelect.Content>
+          </InputSelect>
         </div>
       </div>
 

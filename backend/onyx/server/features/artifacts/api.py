@@ -243,10 +243,7 @@ def get_public_artifact(
 ) -> ArtifactResponse:
     artifact = get_artifact_by_id(db_session, artifact_id)
     if artifact is None or not artifact.is_public:
-        raise OnyxError(
-            OnyxErrorCode.INSUFFICIENT_PERMISSIONS,
-            "Artifact is not public",
-        )
+        raise OnyxError(OnyxErrorCode.NOT_FOUND, "Artifact not found")
     return _artifact_to_response(artifact)
 
 
@@ -257,8 +254,5 @@ def get_public_artifact_content(
 ) -> StreamingResponse:
     artifact = get_artifact_by_id(db_session, artifact_id)
     if artifact is None or not artifact.is_public:
-        raise OnyxError(
-            OnyxErrorCode.INSUFFICIENT_PERMISSIONS,
-            "Artifact is not public",
-        )
+        raise OnyxError(OnyxErrorCode.NOT_FOUND, "Artifact not found")
     return _stream_artifact_content(db_session, artifact_id)

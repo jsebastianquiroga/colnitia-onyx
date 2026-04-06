@@ -48,6 +48,14 @@ def create_artifact_version(
     )
     db_session.add(version)
     db_session.flush()
+
+    artifact = db_session.query(PersistentArtifact).filter(
+        PersistentArtifact.id == artifact_id
+    ).first()
+    if artifact is not None:
+        artifact.current_version = version_number
+        db_session.flush()
+
     return version
 
 
