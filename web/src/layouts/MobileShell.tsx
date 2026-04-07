@@ -49,8 +49,15 @@ function MobileShell({ children }: MobileShellProps) {
     history: null,
   });
 
-  // Sync active tab from external navigation
+  // Track whether tab was changed manually (not via URL navigation)
+  const manualTabChange = useRef(false);
+
+  // Sync active tab from external navigation (e.g. browser back/forward)
   useEffect(() => {
+    if (manualTabChange.current) {
+      manualTabChange.current = false;
+      return;
+    }
     const derived = deriveTabFromPathname(pathname);
     if (derived !== activeTab) {
       setActiveTab(derived);
@@ -82,6 +89,7 @@ function MobileShell({ children }: MobileShellProps) {
         scrollPositions.current[activeTab] = currentRef.scrollTop;
       }
 
+      manualTabChange.current = true;
       setActiveTab(tab);
       setVisitedTabs((prev) => new Set(prev).add(tab));
 
@@ -121,6 +129,7 @@ function MobileShell({ children }: MobileShellProps) {
   }, [router]);
 
   const handleBack = useCallback(() => {
+    manualTabChange.current = true;
     setActiveTab("history");
     setVisitedTabs((prev) => new Set(prev).add("history"));
   }, []);
