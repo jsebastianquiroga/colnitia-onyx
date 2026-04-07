@@ -90,7 +90,7 @@ function Header() {
   const isPaidEnterpriseFeaturesEnabled = usePaidEnterpriseFeaturesEnabled();
   const { state, setAppMode } = useQueryController();
   const settings = useSettingsContext();
-  const { isMobile } = useScreenSize();
+  const { isMobile, isTablet } = useScreenSize();
   const { setFolded } = useAppSidebarContext();
   const [showShareModal, setShowShareModal] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -319,7 +319,8 @@ function Header() {
           - app-mode (for Unified S+C [EE gated])
         */}
         <div className="flex-1 flex flex-row items-center gap-2 h-[3.3rem]">
-          {isMobile && (
+          {/* Sidebar toggle — hidden on mobile/tablet where MobileShell handles navigation */}
+          {!(isMobile || isTablet) && (
             <Button
               prominence="internal"
               icon={SvgSidebar}
