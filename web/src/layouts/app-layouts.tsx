@@ -310,7 +310,9 @@ function Header() {
           //
           // We add an additional top margin to align this header with the `LogoSection` inside of the App-Sidebar.
           // For more information, check out `SidebarWrapper.tsx`.
-          "mt-2"
+          "mt-2",
+          // Hide on mobile/tablet — MobileHeader handles navigation
+          (isMobile || isTablet) && "hidden"
         )}
       >
         {/*
