@@ -224,8 +224,8 @@ function MobileShell({ children }: MobileShellProps) {
         )}
       </div>
 
-      {/* Bottom nav (phone only) */}
-      {isMobile && (
+      {/* Bottom nav (phone only, hidden when inside a chat for more screen space) */}
+      {isMobile && !(isInChat && activeTab === "chat") && (
         <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
       )}
 
