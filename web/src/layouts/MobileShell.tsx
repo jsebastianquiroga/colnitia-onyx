@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { Route } from "next";
 import { cn } from "@/lib/utils";
 import useScreenSize from "@/hooks/useScreenSize";
@@ -26,6 +26,7 @@ function deriveTabFromPathname(pathname: string): MobileTab {
 function MobileShell({ children }: MobileShellProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isMobile, isTablet } = useScreenSize();
 
   const [activeTab, setActiveTab] = useState<MobileTab>(() =>
@@ -96,7 +97,7 @@ function MobileShell({ children }: MobileShellProps) {
       // Update URL
       if (tab === "chat") {
         // Keep current chat URL if we're already on a chat
-        if (!pathname.startsWith("/app/chat")) {
+        if (!searchParams.get("chatId")) {
           router.replace("/app");
         }
       } else if (tab === "search") {
@@ -119,7 +120,7 @@ function MobileShell({ children }: MobileShellProps) {
     (chatId: string) => {
       setActiveTab("chat");
       setVisitedTabs((prev) => new Set(prev).add("chat"));
-      router.replace(`/app/chat/${chatId}` as Route);
+      router.replace(`/app?chatId=${chatId}` as Route);
     },
     [router]
   );
@@ -134,7 +135,7 @@ function MobileShell({ children }: MobileShellProps) {
     setVisitedTabs((prev) => new Set(prev).add("history"));
   }, []);
 
-  const isInChat = pathname.startsWith("/app/chat/");
+  const isInChat = !!searchParams.get("chatId");
 
   return (
     <div
