@@ -139,7 +139,8 @@ function MobileShell({ children }: MobileShellProps) {
 
   return (
     <div
-      className="flex flex-col w-full h-full overflow-hidden"
+      className="flex flex-col w-full overflow-hidden"
+      style={{ height: "100dvh" }}
       data-testid="MobileShell"
       {...(isTablet ? sidebarSwipe : {})}
     >
